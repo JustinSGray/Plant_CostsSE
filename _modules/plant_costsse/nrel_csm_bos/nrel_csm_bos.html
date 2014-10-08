@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>plant_costsse.nrel_csm_bos.nrel_csm_bos &mdash; Turbine_CostsSE 0.1.0 documentation</title>
+    <title>plant_costsse.nrel_csm_bos.nrel_csm_bos &mdash; Plant_CostsSE 0.1.0 documentation</title>
     
     <link rel="stylesheet" href="../../../_static/nrel.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="Turbine_CostsSE 0.1.0 documentation" href="../../../index.html" />
+    <link rel="top" title="Plant_CostsSE 0.1.0 documentation" href="../../../index.html" />
     <link rel="up" title="Module code" href="../../index.html" /> 
   </head>
   <body>
@@ -34,7 +34,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li><a href="../../../index.html">Turbine_CostsSE 0.1.0 documentation</a> &raquo;</li>
+        <li><a href="../../../index.html">Plant_CostsSE 0.1.0 documentation</a> &raquo;</li>
           <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
     </div>  
@@ -274,12 +274,14 @@
                     <span class="n">scour_costs</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_tcc</span> <span class="o">=</span> <span class="mf">0.0</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">iDepth</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sea_depth</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">):</span>
             <span class="n">suretyBond</span> <span class="o">=</span> <span class="n">suretyBRate</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">turbine_cost</span> <span class="o">+</span> <span class="n">bos_costs</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_tcc</span> <span class="o">=</span> <span class="n">suretyBRate</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_tcc</span> <span class="o">=</span> <span class="n">suretyBRate</span>
             <span class="n">d_surety_d_rating</span> <span class="o">=</span> <span class="n">suretyBRate</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_rating</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_rating</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_rating</span> <span class="o">+</span> \
                           <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_rating</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_rating</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_rating</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_rating</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_rating</span> <span class="o">+=</span> <span class="n">d_surety_d_rating</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">suretyBond</span> <span class="o">=</span> <span class="mf">0.0</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">bos_costs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span> <span class="o">*</span> <span class="p">(</span><span class="n">bos_costs</span> <span class="o">+</span> <span class="n">suretyBond</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bos_costs</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">multiplier</span>  <span class="c"># TODO: add to gradients</span>
@@ -292,7 +294,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">bos_breakdown</span><span class="o">.</span><span class="n">assembly_and_installation_costs</span> <span class="o">=</span> <span class="n">installation_costs</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bos_breakdown</span><span class="o">.</span><span class="n">soft_costs</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bos_breakdown</span><span class="o">.</span><span class="n">other_costs</span> <span class="o">=</span> <span class="p">(</span><span class="n">pai_costs</span> <span class="o">+</span> <span class="n">scour_costs</span> <span class="o">+</span> <span class="n">suretyBond</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
-
+  
         <span class="c"># derivatives</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_rating</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_rating</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
@@ -325,7 +327,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_tcc</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_tcc</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_tcc</span> <span class="o">=</span> <span class="mf">0.0</span>
-        <span class="c">#self.d_other_d_tcc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_tcc</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">d_cost_d_tcc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_tcc</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_tcc</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_tcc</span> <span class="o">+</span> \
                           <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_tcc</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_tcc</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_tcc</span> <span class="o">+</span> \
                           <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_tcc</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_tcc</span>
@@ -484,13 +486,13 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
-        <li><a href="../../../index.html">Turbine_CostsSE 0.1.0 documentation</a> &raquo;</li>
+        <li><a href="../../../index.html">Plant_CostsSE 0.1.0 documentation</a> &raquo;</li>
           <li><a href="../../index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2014, NREL.
-      Last updated on Sep 23, 2014.
+      Last updated on Oct 07, 2014.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
