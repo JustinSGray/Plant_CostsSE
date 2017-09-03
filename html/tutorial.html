@@ -1,0 +1,286 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Tutorial &mdash; Plant_CostsSE 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/nrel.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Plant_CostsSE 0.1.0 documentation" href="index.html" />
+    <link rel="next" title="4. Documentation" href="documentation.html" />
+    <link rel="prev" title="2. Installation" href="installation.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="documentation.html" title="4. Documentation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="2. Installation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Plant_CostsSE 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tutorial">
+<span id="tutorial-label"></span><h1>3. Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="tutorial-for-nrel-csm-bos">
+<h2>3.1. Tutorial for NREL_CSM_BOS<a class="headerlink" href="#tutorial-for-nrel-csm-bos" title="Permalink to this headline">¶</a></h2>
+<p>As an example of NREL_CSM_BOS, let us simulate balance of station costs for a land-based wind plant.</p>
+<p>The first step is to import the relevant files and set up the component.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># A simple test of nrel_csm_bos model</span>
+<span class="kn">from</span> <span class="nn">plant_costsse.nrel_csm_bos.nrel_csm_bos</span> <span class="kn">import</span> <span class="n">bos_csm_assembly</span>
+
+<span class="n">bos</span> <span class="o">=</span> <span class="n">bos_csm_assembly</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The plant balance of station cost model relies on some turbine as well as plant input parameters that must be specified.  In this case, the wind turbine machine rating, rotor diameter, overall cost, and hub height need to be specified.  The rotor-nacelle-assembly (RNA) mass is also included but is not used in the model at this time.  For plant inputs, the number of turbines, sea depth, analysis year and month need to be specified.  A multiplier input is available if there is a desire to calibrate the model to some known wind plant costs.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Set input parameters</span>
+<span class="n">bos</span> <span class="o">=</span> <span class="n">bos_csm_assembly</span><span class="p">()</span>
+<span class="n">bos</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">=</span> <span class="mf">5000.0</span>
+<span class="n">bos</span><span class="o">.</span><span class="n">rotor_diameter</span> <span class="o">=</span> <span class="mf">126.0</span>
+<span class="n">bos</span><span class="o">.</span><span class="n">turbine_cost</span> <span class="o">=</span> <span class="mf">5950209.28</span>
+<span class="n">bos</span><span class="o">.</span><span class="n">hub_height</span> <span class="o">=</span> <span class="mf">90.0</span>
+<span class="n">bos</span><span class="o">.</span><span class="n">RNA_mass</span> <span class="o">=</span> <span class="mf">256634.5</span> <span class="c"># RNA mass is not used in this simple model</span>
+<span class="n">bos</span><span class="o">.</span><span class="n">turbine_number</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">bos</span><span class="o">.</span><span class="n">sea_depth</span> <span class="o">=</span> <span class="mf">20.0</span>
+<span class="n">bos</span><span class="o">.</span><span class="n">year</span> <span class="o">=</span> <span class="mi">2009</span>
+<span class="n">bos</span><span class="o">.</span><span class="n">month</span> <span class="o">=</span> <span class="mi">12</span>
+<span class="n">bos</span><span class="o">.</span><span class="n">multiplier</span> <span class="o">=</span> <span class="mf">1.0</span>
+</pre></div>
+</div>
+<p>We can now evaluate the plant balance of station costs.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">bos</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>We then print out the resulting cost values.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">print</span> <span class="s">&quot;Balance of Station Costs for an offshore wind plant with 100 NREL 5 MW turbines&quot;</span>
+<span class="k">print</span> <span class="s">&quot;BOS cost offshore: ${0:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bos</span><span class="o">.</span><span class="n">bos_costs</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;BOS cost per turbine: ${0:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bos</span><span class="o">.</span><span class="n">bos_costs</span> <span class="o">/</span> <span class="n">bos</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+<span class="k">print</span>
+</pre></div>
+</div>
+<p>The result is:</p>
+<div class="highlight-python"><div class="highlight"><pre>&gt;&gt;&gt; Balance of Station Costs for an offshore wind plant with 100 NREL 5 MW turbines
+&gt;&gt;&gt; BOS cost offshore: $766464743.61 USD
+&gt;&gt;&gt; BOS cost per turbine: $7664647.44 USD
+</pre></div>
+</div>
+<p>Next we repeat the process but change the input settings for an land-based wind plant.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">bos</span><span class="o">.</span><span class="n">sea_depth</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="n">bos</span><span class="o">.</span><span class="n">turbine_cost</span> <span class="o">=</span> <span class="mf">5229222.77</span>
+
+<span class="n">bos</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+<span class="k">print</span> <span class="s">&quot;Balance of Station Costs for an land-based wind plant with 100 NREL 5 MW turbines&quot;</span>
+<span class="k">print</span> <span class="s">&quot;BOS cost land-based: ${0:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bos</span><span class="o">.</span><span class="n">bos_costs</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;BOS cost per turbine: ${0:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bos</span><span class="o">.</span><span class="n">bos_costs</span> <span class="o">/</span> <span class="n">bos</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+<span class="k">print</span>
+</pre></div>
+</div>
+<p>The new result is:</p>
+<div class="highlight-python"><div class="highlight"><pre>&gt;&gt;&gt; Balance of Station Costs for an land-based wind plant with 100 NREL 5 MW turbines
+&gt;&gt;&gt; BOS cost onshore: $308453311.95 USD
+&gt;&gt;&gt; BOS cost per turbine: $3084533.12 USD
+</pre></div>
+</div>
+</div>
+<div class="section" id="tutorial-for-nrel-csm-opex">
+<h2>3.2. Tutorial for NREL_CSM_OPEX<a class="headerlink" href="#tutorial-for-nrel-csm-opex" title="Permalink to this headline">¶</a></h2>
+<p>As an example of NREL_CSM_OPEX, let us simulate operational expenditures for a land-based wind plant.</p>
+<p>The first step is to import the relevant files and set up the component.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># A simple test of nrel_csm_om model</span>
+<span class="kn">from</span> <span class="nn">plant_costsse.nrel_csm_opex.nrel_csm_opex</span> <span class="kn">import</span> <span class="n">opex_csm_assembly</span>
+
+<span class="n">om</span> <span class="o">=</span> <span class="n">opex_csm_assembly</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The plant operational expenditures model relies on some turbine as well as plant input parameters that must be specified.  For the OPEX model, the turbine machine rating must be specified as well as plant parameters including the net annual energy production of the plant, the number of turbines and the sea depth.  The analysis year and month must also be specified.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Ste input parameters</span>
+<span class="n">om</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">=</span> <span class="mf">5000.0</span> <span class="c"># Need to manipulate input or underlying component will not execute</span>
+<span class="n">om</span><span class="o">.</span><span class="n">net_aep</span> <span class="o">=</span> <span class="mf">1701626526.28</span>
+<span class="n">om</span><span class="o">.</span><span class="n">sea_depth</span> <span class="o">=</span> <span class="mf">20.0</span>
+<span class="n">om</span><span class="o">.</span><span class="n">year</span> <span class="o">=</span> <span class="mi">2009</span>
+<span class="n">om</span><span class="o">.</span><span class="n">month</span> <span class="o">=</span> <span class="mi">12</span>
+<span class="n">om</span><span class="o">.</span><span class="n">turbine_number</span> <span class="o">=</span> <span class="mi">100</span>
+</pre></div>
+</div>
+<p>We can now evaluate the plant operational expenditures.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">om</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>We then print out the resulting cost values.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">print</span> <span class="s">&quot;Average annual operational expenditures for an offshore wind plant with 100 NREL 5 MW turbines&quot;</span>
+<span class="k">print</span> <span class="s">&quot;OPEX offshore ${:.2f}: USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">avg_annual_opex</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;Preventative OPEX by turbine: ${:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">preventative_opex</span> <span class="o">/</span> <span class="n">om</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;Corrective OPEX by turbine: ${:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">corrective_opex</span> <span class="o">/</span> <span class="n">om</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;Land Lease OPEX by turbine: ${:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">lease_opex</span> <span class="o">/</span> <span class="n">om</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+<span class="k">print</span>
+</pre></div>
+</div>
+<p>The result is:</p>
+<div class="highlight-python"><div class="highlight"><pre>&gt;&gt;&gt; Average annual operational expenditures for an offshore wind plant with 100 NREL 5 MW turbines
+&gt;&gt;&gt; OPEX offshore: $47575391.88 USD
+&gt;&gt;&gt; Preventative OPEX by turbine: $364542.00 USD
+&gt;&gt;&gt; Corrective OPEX by turbine: $91048.39 USD
+&gt;&gt;&gt; Land Lease OPEX by turbine: $20163.53 USD
+</pre></div>
+</div>
+<p>Next we repeat the process but change the input settings for an land-based wind plant.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">om</span><span class="o">.</span><span class="n">sea_depth</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="n">om</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="k">print</span> <span class="s">&quot;Average annual operational expenditures for an land-based wind plant with 100 NREL 5 MW turbines&quot;</span>
+<span class="k">print</span> <span class="s">&quot;OPEX land-based: ${:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">avg_annual_opex</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;Preventative OPEX by turbine: ${:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">preventative_opex</span> <span class="o">/</span> <span class="n">om</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;Corrective OPEX by turbine: ${:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">corrective_opex</span> <span class="o">/</span> <span class="n">om</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;Land Lease OPEX by turbine: ${:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">lease_opex</span> <span class="o">/</span> <span class="n">om</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+<span class="k">print</span>
+</pre></div>
+</div>
+<p>The new result is:</p>
+<div class="highlight-python"><div class="highlight"><pre>&gt;&gt;&gt; Average annual operational expenditures for an land-based wind plant with 100 NREL 5 MW turbines
+&gt;&gt;&gt; OPEX land-based: $20955230.02 USD
+&gt;&gt;&gt; Preventative OPEX by turbine: $130689.55 USD
+&gt;&gt;&gt; Corrective OPEX by turbine: $58699.22 USD
+&gt;&gt;&gt; Land Lease OPEX by turbine: $20163.53 USD
+</pre></div>
+</div>
+</div>
+<div class="section" id="tutorial-for-ecn-offshore-opex">
+<h2>3.3. Tutorial for ECN_Offshore_OPEX<a class="headerlink" href="#tutorial-for-ecn-offshore-opex" title="Permalink to this headline">¶</a></h2>
+<p>As an example of ECN_Offshore_OPEX, let us simulate operational expenditures for an offshore wind plant.</p>
+<p>The first step is to import the relevant files and set up the component.  Note that the location of the ECN model must be specified as an input to the wrapper.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># A simple test of ecn_offshore_om model</span>
+<span class="kn">from</span> <span class="nn">plant_costsse.ecn_offshore_opex.ecn_offshore_opex</span> <span class="kn">import</span> <span class="n">opex_ecn_assembly</span>
+
+<span class="n">om2</span> <span class="o">=</span> <span class="n">opex_ecn_assembly</span><span class="p">(</span><span class="s">&#39;C:/Models/ECN Model/ECN O&amp;M Model.xls&#39;</span><span class="p">)</span> <span class="c"># Substitute your own path to the ECN Model</span>
+</pre></div>
+</div>
+<p>The plant operational expenditures model relies on some turbine as well as plant input parameters that must be specified.  At the moment these include the turbine machine rating and overall cost as well as the number of turbines in the plant and the expected project lifetime.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Set input parameters</span>
+<span class="n">om2</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">=</span> <span class="mf">5000.0</span>
+<span class="n">om2</span><span class="o">.</span><span class="n">turbine_cost</span> <span class="o">=</span> <span class="mf">9000000.0</span>
+<span class="n">om2</span><span class="o">.</span><span class="n">turbine_number</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">om2</span><span class="o">.</span><span class="n">project_lifetime</span> <span class="o">=</span> <span class="mi">20</span>
+</pre></div>
+</div>
+<p>We can now evaluate the plant operational expenditures.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">om2</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>We then print out the resulting cost values.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">print</span> <span class="s">&quot;Average annual operational expenditures for an offshore wind plant with 100 NREL 5 MW turbines&quot;</span>
+<span class="k">print</span> <span class="s">&quot;OPEX offshore: ${:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om2</span><span class="o">.</span><span class="n">avg_annual_opex</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;Preventative OPEX by turbine: ${:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om2</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">preventative_opex</span> <span class="o">/</span> <span class="n">om2</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;Corrective OPEX by turbine: ${:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om2</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">corrective_opex</span> <span class="o">/</span> <span class="n">om2</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;Land Lease OPEX by turbine: ${:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om2</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">lease_opex</span> <span class="o">/</span> <span class="n">om2</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;and plant availability of {:.1f}% &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om2</span><span class="o">.</span><span class="n">availability</span><span class="o">*</span><span class="mf">100.0</span><span class="p">)</span>
+<span class="k">print</span>
+</pre></div>
+</div>
+<p>The results will vary depending on the configuration of the model but example results are provided here:</p>
+<div class="highlight-python"><div class="highlight"><pre>&gt;&gt;&gt; Average annual operational expenditures for an offshore wind plant with 100 NREL 5 MW turbines
+&gt;&gt;&gt; OPEX offshore: $60080182.54 USD
+&gt;&gt;&gt; Preventative OPEX by turbine: $56525.74 USD
+&gt;&gt;&gt; Corrective OPEX by turbine: $389276.09 USD
+&gt;&gt;&gt; Land Lease OPEX by turbine: $105000.00 USD
+&gt;&gt;&gt; and plant availability of 94.3%
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. Tutorial</a><ul>
+<li><a class="reference internal" href="#tutorial-for-nrel-csm-bos">3.1. Tutorial for NREL_CSM_BOS</a></li>
+<li><a class="reference internal" href="#tutorial-for-nrel-csm-opex">3.2. Tutorial for NREL_CSM_OPEX</a></li>
+<li><a class="reference internal" href="#tutorial-for-ecn-offshore-opex">3.3. Tutorial for ECN_Offshore_OPEX</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="previous chapter">2. Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="documentation.html"
+                        title="next chapter">4. Documentation</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/tutorial.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="documentation.html" title="4. Documentation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="2. Installation"
+             >previous</a> |</li>
+        <li><a href="index.html">Plant_CostsSE 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, NREL.
+      Last updated on Oct 07, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

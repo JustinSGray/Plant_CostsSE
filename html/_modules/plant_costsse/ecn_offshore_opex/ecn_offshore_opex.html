@@ -1,0 +1,228 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>plant_costsse.ecn_offshore_opex.ecn_offshore_opex &mdash; Plant_CostsSE 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nrel.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Plant_CostsSE 0.1.0 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="../../../index.html">Plant_CostsSE 0.1.0 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for plant_costsse.ecn_offshore_opex.ecn_offshore_opex</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">om_ecn_offshore_component.py</span>
+
+<span class="sd">Created by NWTC Systems Engineering Sub-Task on 2012-08-01.</span>
+<span class="sd">Copyright (c) NREL. All rights reserved.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">Assembly</span><span class="p">,</span> <span class="n">VariableTree</span>
+<span class="kn">from</span> <span class="nn">openmdao.main.datatypes.api</span> <span class="kn">import</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Array</span><span class="p">,</span> <span class="n">VarTree</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">fusedwind.plant_cost.fused_opex</span> <span class="kn">import</span> <span class="n">OPEXVarTree</span><span class="p">,</span> <span class="n">ExtendedOPEXAggregator</span><span class="p">,</span> <span class="n">ExtendedOPEXModel</span><span class="p">,</span> <span class="n">configure_extended_opex</span>
+<span class="kn">from</span> <span class="nn">fusedwind.interface</span> <span class="kn">import</span> <span class="n">implement_base</span>
+
+<span class="kn">from</span> <span class="nn">ecnomXLS</span> <span class="kn">import</span> <span class="n">ecnomXLS</span>
+
+<span class="nd">@implement_base</span><span class="p">(</span><span class="n">ExtendedOPEXModel</span><span class="p">)</span>
+<div class="viewcode-block" id="opex_ecn_assembly"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.ecn_offshore_opex.ecn_offshore_opex.opex_ecn_assembly">[docs]</a><span class="k">class</span> <span class="nc">opex_ecn_assembly</span><span class="p">(</span><span class="n">Assembly</span><span class="p">):</span>
+
+    <span class="c"># variables</span>
+    <span class="n">turbine_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;turbine system capital costs&#39;</span><span class="p">)</span>
+    <span class="n">machine_rating</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="s">&#39;kW&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span> <span class="s">&#39;wind turbine rated power&#39;</span><span class="p">)</span>
+
+    <span class="c"># parameters</span>
+    <span class="n">turbine_number</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;total number of wind turbines at the plant&#39;</span><span class="p">)</span>
+    <span class="n">project_lifetime</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;project lifetime for wind plant&#39;</span><span class="p">)</span>
+
+    <span class="c"># Outputs</span>
+    <span class="n">avg_annual_opex</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Average annual Operating Expenditures for a wind plant over its lifetime&#39;</span><span class="p">)</span>
+    <span class="n">opex_breakdown</span> <span class="o">=</span> <span class="n">VarTree</span><span class="p">(</span><span class="n">OPEXVarTree</span><span class="p">(),</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">)</span>
+    <span class="n">availability</span>  <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Availability&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ssfile</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">ssfile</span> <span class="o">=</span> <span class="n">ssfile</span>
+      
+        <span class="n">Assembly</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">configure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">configure_extended_opex</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+      
+        <span class="bp">self</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;opex&#39;</span><span class="p">,</span> <span class="n">opex_ecn_offshore_component</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssfile</span><span class="p">))</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_cost&#39;</span><span class="p">,</span><span class="s">&#39;opex.turbine_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;machine_rating&#39;</span><span class="p">,</span><span class="s">&#39;opex.machine_rating&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_number&#39;</span><span class="p">,</span><span class="s">&#39;opex.turbine_number&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;project_lifetime&#39;</span><span class="p">,</span><span class="s">&#39;opex.project_lifetime&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;opex.availability&#39;</span><span class="p">,</span><span class="s">&#39;availability&#39;</span><span class="p">)</span>
+</div>
+<span class="nd">@implement_base</span><span class="p">(</span><span class="n">ExtendedOPEXAggregator</span><span class="p">)</span>
+<div class="viewcode-block" id="opex_ecn_offshore_component"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.ecn_offshore_opex.ecn_offshore_opex.opex_ecn_offshore_component">[docs]</a><span class="k">class</span> <span class="nc">opex_ecn_offshore_component</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Evaluates the ECN O&amp;M spreadsheet &quot;&quot;&quot;</span>
+
+    <span class="c"># variables</span>
+    <span class="n">turbine_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;turbine system capital costs&#39;</span><span class="p">)</span>
+    <span class="n">machine_rating</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="s">&#39;kW&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span> <span class="s">&#39;wind turbine rated power&#39;</span><span class="p">)</span>
+
+    <span class="c"># parameters</span>
+    <span class="n">turbine_number</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;total number of wind turbines at the plant&#39;</span><span class="p">)</span>
+    <span class="n">project_lifetime</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;project lifetime for wind plant&#39;</span><span class="p">)</span>
+
+    <span class="c"># Outputs</span>
+    <span class="n">avg_annual_opex</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Average annual Operating Expenditures for a wind plant over its lifetime&#39;</span><span class="p">)</span>
+    <span class="n">opex_breakdown</span> <span class="o">=</span> <span class="n">VarTree</span><span class="p">(</span><span class="n">OPEXVarTree</span><span class="p">(),</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">)</span>
+    <span class="n">availability</span>  <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Availability&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ssfile</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        OpenMDAO component to wrap ECN Offshore O&amp;M Excel Model (ecnomXLS.py).</span>
+<span class="sd">        Call __init__ with a file name to override default ECN spreadsheet file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">Component</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="c">#open excel account</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ecnxls</span> <span class="o">=</span> <span class="n">ecnomXLS</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ecnxls</span><span class="o">.</span><span class="n">ssopen</span><span class="p">(</span><span class="n">ssfile</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes the ECN O&amp;M Offshore model using excel spreadsheet and finds total and detailed O&amp;M costs for the plant as well as availability.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># print &quot;In {0}.execute()...&quot;.format(self.__class__)</span>
+
+        <span class="c"># Inputs - copy to spreadsheet</span>
+
+        <span class="c"># set basic plant inputs        </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ecnxls</span><span class="o">.</span><span class="n">setCell</span><span class="p">(</span> <span class="mi">6</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ecnxls</span><span class="o">.</span><span class="n">setCell</span><span class="p">(</span> <span class="mi">5</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ecnxls</span><span class="o">.</span><span class="n">setCell</span><span class="p">(</span> <span class="mi">7</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">project_lifetime</span><span class="p">)</span>
+
+        <span class="c"># set basic turbine inputs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">invCosts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_cost</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span>  <span class="c"># investment costs per kW</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ecnxls</span><span class="o">.</span><span class="n">setCell</span><span class="p">(</span> <span class="mi">6</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">invCosts</span><span class="p">)</span>
+        
+        <span class="c"># Outputs - read from spreadsheet</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">availability</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecnxls</span><span class="o">.</span><span class="n">getCell</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">9</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avg_annual_opex</span>      <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecnxls</span><span class="o">.</span><span class="n">getCell</span><span class="p">(</span><span class="mi">56</span><span class="p">,</span><span class="mi">9</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">lease_opex</span> <span class="o">=</span> <span class="mf">21.0</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="c"># hack to include land lease costs not in ECN model, cost from COE Review 2011</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avg_annual_opex</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">lease_opex</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">corrective_opex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecnxls</span><span class="o">.</span><span class="n">getCell</span><span class="p">(</span><span class="mi">51</span><span class="p">,</span><span class="mi">9</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecnxls</span><span class="o">.</span><span class="n">getCell</span><span class="p">(</span><span class="mi">52</span><span class="p">,</span><span class="mi">9</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">preventative_opex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecnxls</span><span class="o">.</span><span class="n">getCell</span><span class="p">(</span><span class="mi">53</span><span class="p">,</span><span class="mi">9</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">other_opex</span>    <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecnxls</span><span class="o">.</span><span class="n">getCell</span><span class="p">(</span><span class="mi">54</span><span class="p">,</span><span class="mi">9</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+        
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Close the spreadsheet inputs and clean up</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ecnxls</span><span class="o">.</span><span class="n">ssclose</span><span class="p">()</span>
+
+<span class="c">#----------------------------</span>
+</div>
+<span class="k">def</span> <span class="nf">example</span><span class="p">(</span><span class="n">ssfile</span><span class="p">):</span>
+             
+    <span class="n">om</span> <span class="o">=</span> <span class="n">opex_ecn_assembly</span><span class="p">(</span><span class="n">ssfile</span><span class="p">)</span>
+    <span class="n">om</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">=</span> <span class="mf">5000.0</span>
+    <span class="n">om</span><span class="o">.</span><span class="n">turbine_cost</span> <span class="o">=</span> <span class="mf">9000000.0</span>
+    <span class="n">om</span><span class="o">.</span><span class="n">turbine_number</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">om</span><span class="o">.</span><span class="n">project_lifetime</span> <span class="o">=</span> <span class="mi">20</span>
+    
+    <span class="n">om</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+    <span class="k">print</span> <span class="s">&quot;Average annual operational expenditures for an offshore wind plant with 100 NREL 5 MW turbines&quot;</span>
+    <span class="k">print</span> <span class="s">&quot;OPEX offshore ${:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">avg_annual_opex</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;Preventative OPEX by turbine ${:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">preventative_opex</span> <span class="o">/</span> <span class="n">om</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;Corrective OPEX by turbine ${:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">corrective_opex</span> <span class="o">/</span> <span class="n">om</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;Land Lease OPEX by turbine ${:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">opex_breakdown</span><span class="o">.</span><span class="n">lease_opex</span> <span class="o">/</span> <span class="n">om</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;and plant availability of {:.1f}% &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">availability</span><span class="o">*</span><span class="mf">100.0</span><span class="p">)</span>
+    <span class="k">print</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span> <span class="c"># pragma: no cover         </span>
+
+    <span class="n">ssfile</span> <span class="o">=</span> <span class="s">&#39;C:/Models/ECN Model/ECN O&amp;M Model.xls&#39;</span>
+
+    <span class="n">example</span><span class="p">(</span><span class="n">ssfile</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="../../../index.html">Plant_CostsSE 0.1.0 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, NREL.
+      Last updated on Oct 07, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

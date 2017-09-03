@@ -1,0 +1,866 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>plant_costsse.nrel_land_bosse.nrel_land_bosse &mdash; Plant_CostsSE 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nrel.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Plant_CostsSE 0.1.0 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Plant_CostsSE 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for plant_costsse.nrel_land_bosse.nrel_land_bosse</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="c"># encoding: utf-8</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">LandBOS.py</span>
+
+<span class="sd">Created by Andrew Ning on 2014-03-12.</span>
+<span class="sd">Copyright (c) NREL. All rights reserved.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">Assembly</span>
+<span class="kn">from</span> <span class="nn">openmdao.main.datatypes.api</span> <span class="kn">import</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">Bool</span>
+
+<span class="kn">import</span> <span class="nn">_landbos</span>
+
+
+<div class="viewcode-block" id="Enum2Int"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.Enum2Int">[docs]</a><span class="k">def</span> <span class="nf">Enum2Int</span><span class="p">(</span><span class="n">component</span><span class="p">,</span> <span class="n">trait</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">component</span><span class="o">.</span><span class="n">get_trait</span><span class="p">(</span><span class="n">trait</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">component</span><span class="p">,</span> <span class="n">trait</span><span class="p">))</span>
+
+</div>
+<div class="viewcode-block" id="FarmSize"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.FarmSize">[docs]</a><span class="k">class</span> <span class="nc">FarmSize</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">rating</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;machine rating&#39;</span><span class="p">)</span>
+    <span class="n">nTurbines</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;number of turbines&#39;</span><span class="p">)</span>
+
+    <span class="n">farmSize</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;MW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;wind farm size&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">farmSize</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">farmSize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rating</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Defaults"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.Defaults">[docs]</a><span class="k">class</span> <span class="nc">Defaults</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">nTurbines</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;number of turbines&#39;</span><span class="p">)</span>
+    <span class="n">farmSize</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;MW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;wind farm size&#39;</span><span class="p">)</span>
+    <span class="n">override_constructionTime</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;mo&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;construction time&#39;</span><span class="p">)</span>
+    <span class="n">override_accessRoadEntrances</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;access road entrances&#39;</span><span class="p">)</span>
+    <span class="n">override_weatherDelayDays</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;weather delay days&#39;</span><span class="p">)</span>
+    <span class="n">override_craneBreakdowns</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;crane breakdowns&#39;</span><span class="p">)</span>
+    <span class="n">override_buildingSize</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;ft**2&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;O&amp;M building size&#39;</span><span class="p">)</span>
+    <span class="n">override_permanentMetTowers</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;permananet meteorological towers&#39;</span><span class="p">)</span>
+    <span class="n">override_tempMetTowers</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;temporary meteorological towers&#39;</span><span class="p">)</span>
+
+    <span class="n">constructionTime</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;mo&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;construction time&#39;</span><span class="p">)</span>
+    <span class="n">accessRoadEntrances</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;access road entrances&#39;</span><span class="p">)</span>
+    <span class="n">weatherDelayDays</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;weather delay days&#39;</span><span class="p">)</span>
+    <span class="n">craneBreakdowns</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;crane breakdowns&#39;</span><span class="p">)</span>
+    <span class="n">buildingSize</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;ft**2&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;O&amp;M building size&#39;</span><span class="p">)</span>
+    <span class="n">permanentMetTowers</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;permananet meteorological towers&#39;</span><span class="p">)</span>
+    <span class="n">tempMetTowers</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;temporary meteorological towers&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">override_constructionTime</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">constructionTime</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">defaultConstructionTime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">constructionTime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">override_constructionTime</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">override_accessRoadEntrances</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">accessRoadEntrances</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">defaultAccessRoadEntrances</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">accessRoadEntrances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">override_accessRoadEntrances</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">override_weatherDelayDays</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weatherDelayDays</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">defaultWeatherDelayDays</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weatherDelayDays</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">override_weatherDelayDays</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">override_craneBreakdowns</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">craneBreakdowns</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">defaultCraneBreakdowns</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">craneBreakdowns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">override_craneBreakdowns</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">override_buildingSize</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">buildingSize</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">defaultBuildingSize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">farmSize</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">buildingSize</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">override_buildingSize</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">override_permanentMetTowers</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">permanentMetTowers</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">defaultPermanentMetTowers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">farmSize</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">permanentMetTowers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">override_permanentMetTowers</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">override_tempMetTowers</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tempMetTowers</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">defaultTempMetTowers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">farmSize</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tempMetTowers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">override_tempMetTowers</span>
+
+
+
+</div>
+<div class="viewcode-block" id="Transportation"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.Transportation">[docs]</a><span class="k">class</span> <span class="nc">Transportation</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">TCC</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD/kW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;turbine capital cost per kW&#39;</span><span class="p">)</span>
+    <span class="n">rating</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;machine rating&#39;</span><span class="p">)</span>
+    <span class="n">nTurbines</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;number of turbines&#39;</span><span class="p">)</span>
+    <span class="n">hubHeight</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;hub height&#39;</span><span class="p">)</span>
+    <span class="n">transportDist</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;mi&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;transportation distance&#39;</span><span class="p">)</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;turbine and transportation cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">transportationCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">TCC</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rating</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hubHeight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">transportDist</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">list_deriv_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;TCC&#39;</span><span class="p">,</span> <span class="s">&#39;hubHeight&#39;</span><span class="p">)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;cost&#39;</span><span class="p">,)</span>
+
+        <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span>
+
+    <span class="k">def</span> <span class="nf">provideJ</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">dtcc</span><span class="p">,</span> <span class="n">dhubHt</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">deriv_transportationCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rating</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">)</span>
+        <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">dtcc</span><span class="p">,</span> <span class="n">dhubHt</span><span class="p">]])</span>
+
+        <span class="k">return</span> <span class="n">J</span>
+
+</div>
+<div class="viewcode-block" id="Engineering"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.Engineering">[docs]</a><span class="k">class</span> <span class="nc">Engineering</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">nTurbines</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;number of turbines&#39;</span><span class="p">)</span>
+    <span class="n">farmSize</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;MW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;wind farm size&#39;</span><span class="p">)</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;engineering cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">engineeringCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">farmSize</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="PowerPerformance"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.PowerPerformance">[docs]</a><span class="k">class</span> <span class="nc">PowerPerformance</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">hubHeight</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;hub height&#39;</span><span class="p">)</span>
+    <span class="n">permanentMetTowers</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;permananet meteorological towers&#39;</span><span class="p">)</span>
+    <span class="n">tempMetTowers</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;temporary meteorological towers&#39;</span><span class="p">)</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;met masts and power performance cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">powerPerformanceCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hubHeight</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">permanentMetTowers</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tempMetTowers</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">list_deriv_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;hubHeight&#39;</span><span class="p">,)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;cost&#39;</span><span class="p">,)</span>
+
+        <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span>
+
+    <span class="k">def</span> <span class="nf">provideJ</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">dhubHT</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">deriv_powerPerformanceCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hubHeight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">permanentMetTowers</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tempMetTowers</span><span class="p">)</span>
+        <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">dhubHT</span><span class="p">]])</span>
+
+        <span class="k">return</span> <span class="n">J</span>
+
+</div>
+<div class="viewcode-block" id="AccessRoads"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.AccessRoads">[docs]</a><span class="k">class</span> <span class="nc">AccessRoads</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">terrain</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="s">&#39;FLAT_TO_ROLLING&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s">&#39;FLAT_TO_ROLLING&#39;</span><span class="p">,</span> <span class="s">&#39;RIDGE_TOP&#39;</span><span class="p">,</span> <span class="s">&#39;MOUNTAINOUS&#39;</span><span class="p">),</span>
+        <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;terrain options&#39;</span><span class="p">)</span>
+    <span class="n">layout</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="s">&#39;SIMPLE&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s">&#39;SIMPLE&#39;</span><span class="p">,</span> <span class="s">&#39;COMPLEX&#39;</span><span class="p">),</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span>
+        <span class="n">desc</span><span class="o">=</span><span class="s">&#39;layout options&#39;</span><span class="p">)</span>
+    <span class="n">nTurbines</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;number of turbines&#39;</span><span class="p">)</span>
+    <span class="n">diameter</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;rotor diameter&#39;</span><span class="p">)</span>
+    <span class="n">constructionTime</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;mo&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;construction time&#39;</span><span class="p">)</span>
+    <span class="n">accessRoadEntrances</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;access road entrances&#39;</span><span class="p">)</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;access roads and site improvement cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">accessRoadsCost</span><span class="p">(</span><span class="n">Enum2Int</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;terrain&#39;</span><span class="p">),</span>
+            <span class="n">Enum2Int</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;layout&#39;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">diameter</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">constructionTime</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">accessRoadEntrances</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">list_deriv_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;diameter&#39;</span><span class="p">,)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;cost&#39;</span><span class="p">,)</span>
+
+        <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span>
+
+    <span class="k">def</span> <span class="nf">provideJ</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">ddiameter</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">deriv_accessRoadsCost</span><span class="p">(</span><span class="n">Enum2Int</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;terrain&#39;</span><span class="p">),</span>
+            <span class="n">Enum2Int</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;layout&#39;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">)</span>
+        <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">ddiameter</span><span class="p">]])</span>
+
+        <span class="k">return</span> <span class="n">J</span>
+
+</div>
+<div class="viewcode-block" id="SiteCompound"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.SiteCompound">[docs]</a><span class="k">class</span> <span class="nc">SiteCompound</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">constructionTime</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;mo&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;construction time&#39;</span><span class="p">)</span>
+    <span class="n">accessRoadEntrances</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;access road entrances&#39;</span><span class="p">)</span>
+    <span class="n">farmSize</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;MW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;wind farm size&#39;</span><span class="p">)</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;site compound and security cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">siteCompoundCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">accessRoadEntrances</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">constructionTime</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">farmSize</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Building"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.Building">[docs]</a><span class="k">class</span> <span class="nc">Building</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">buildingSize</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;ft**2&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;O&amp;M building size&#39;</span><span class="p">)</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;control - O&amp;M building cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">buildingCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">buildingSize</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Foundations"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.Foundations">[docs]</a><span class="k">class</span> <span class="nc">Foundations</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">rating</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;machine rating&#39;</span><span class="p">)</span>
+    <span class="n">diameter</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;rotor diameter&#39;</span><span class="p">)</span>
+    <span class="n">topMass</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kg&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;tower top mass (tonnes)&#39;</span><span class="p">)</span>
+    <span class="n">hubHeight</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;hub height&#39;</span><span class="p">)</span>
+    <span class="n">soil</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="s">&#39;STANDARD&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s">&#39;STANDARD&#39;</span><span class="p">,</span> <span class="s">&#39;BOUYANT&#39;</span><span class="p">),</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span>
+        <span class="n">desc</span><span class="o">=</span><span class="s">&#39;soil options&#39;</span><span class="p">)</span>
+    <span class="n">nTurbines</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;number of turbines&#39;</span><span class="p">)</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;foundations cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">foundationCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rating</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">diameter</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">topMass</span><span class="o">/</span><span class="mf">1000.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hubHeight</span><span class="p">,</span> <span class="n">Enum2Int</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;soil&#39;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">list_deriv_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;diameter&#39;</span><span class="p">,</span> <span class="s">&#39;topMass&#39;</span><span class="p">,</span> <span class="s">&#39;hubHeight&#39;</span><span class="p">)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;cost&#39;</span><span class="p">,)</span>
+
+        <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span>
+
+    <span class="k">def</span> <span class="nf">provideJ</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">ddiameter</span><span class="p">,</span> <span class="n">dtopMass</span><span class="p">,</span> <span class="n">dhubHt</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">deriv_foundationCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rating</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">diameter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">topMass</span><span class="o">/</span><span class="mf">1000.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">)</span>
+
+        <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">ddiameter</span><span class="p">,</span> <span class="n">dtopMass</span><span class="o">/</span><span class="mf">1000.0</span><span class="p">,</span> <span class="n">dhubHt</span><span class="p">]])</span>
+
+        <span class="k">return</span> <span class="n">J</span>
+
+</div>
+<div class="viewcode-block" id="Erection"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.Erection">[docs]</a><span class="k">class</span> <span class="nc">Erection</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">rating</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;machine rating&#39;</span><span class="p">)</span>
+    <span class="n">hubHeight</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;hub height&#39;</span><span class="p">)</span>
+    <span class="n">nTurbines</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;number of turbines&#39;</span><span class="p">)</span>
+    <span class="n">weatherDelayDays</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;weather delay days&#39;</span><span class="p">)</span>
+    <span class="n">craneBreakdowns</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;crane breakdowns&#39;</span><span class="p">)</span>
+    <span class="n">deliveryAssistRequired</span> <span class="o">=</span> <span class="n">Bool</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;delivery assist required&#39;</span><span class="p">)</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;erection cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">erectionCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rating</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hubHeight</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weatherDelayDays</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">craneBreakdowns</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">deliveryAssistRequired</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">list_deriv_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;hubHeight&#39;</span><span class="p">,)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;cost&#39;</span><span class="p">,)</span>
+
+        <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span>
+
+    <span class="k">def</span> <span class="nf">provideJ</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">dhubHt</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">deriv_erectionCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">)</span>
+        <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">dhubHt</span><span class="p">]])</span>
+
+        <span class="k">return</span> <span class="n">J</span>
+
+</div>
+<div class="viewcode-block" id="ElecMaterials"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.ElecMaterials">[docs]</a><span class="k">class</span> <span class="nc">ElecMaterials</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">terrain</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="s">&#39;FLAT_TO_ROLLING&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s">&#39;FLAT_TO_ROLLING&#39;</span><span class="p">,</span> <span class="s">&#39;RIDGE_TOP&#39;</span><span class="p">,</span> <span class="s">&#39;MOUNTAINOUS&#39;</span><span class="p">),</span>
+        <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;terrain options&#39;</span><span class="p">)</span>
+    <span class="n">layout</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="s">&#39;SIMPLE&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s">&#39;SIMPLE&#39;</span><span class="p">,</span> <span class="s">&#39;COMPLEX&#39;</span><span class="p">),</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span>
+        <span class="n">desc</span><span class="o">=</span><span class="s">&#39;layout options&#39;</span><span class="p">)</span>
+    <span class="n">farmSize</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;MW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;wind farm size&#39;</span><span class="p">)</span>
+    <span class="n">diameter</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;rotor diameter&#39;</span><span class="p">)</span>
+    <span class="n">nTurbines</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;number of turbines&#39;</span><span class="p">)</span>
+    <span class="n">padMountTransformer</span> <span class="o">=</span> <span class="n">Bool</span><span class="p">(</span><span class="bp">True</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;pad mount transformer required&#39;</span><span class="p">)</span>
+    <span class="n">thermalBackfill</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;mi&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;MV thermal backfill&#39;</span><span class="p">)</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;MV electrical materials cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">electricalMaterialsCost</span><span class="p">(</span><span class="n">Enum2Int</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;terrain&#39;</span><span class="p">),</span>
+            <span class="n">Enum2Int</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;layout&#39;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">farmSize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">diameter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">padMountTransformer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thermalBackfill</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">list_deriv_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;diameter&#39;</span><span class="p">,)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;cost&#39;</span><span class="p">,)</span>
+
+        <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span>
+
+    <span class="k">def</span> <span class="nf">provideJ</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">ddiameter</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">deriv_electricalMaterialsCost</span><span class="p">(</span><span class="n">Enum2Int</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;terrain&#39;</span><span class="p">),</span>
+            <span class="n">Enum2Int</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;layout&#39;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">)</span>
+        <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">ddiameter</span><span class="p">]])</span>
+
+        <span class="k">return</span> <span class="n">J</span>
+
+</div>
+<div class="viewcode-block" id="ElecInstallation"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.ElecInstallation">[docs]</a><span class="k">class</span> <span class="nc">ElecInstallation</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">terrain</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="s">&#39;FLAT_TO_ROLLING&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s">&#39;FLAT_TO_ROLLING&#39;</span><span class="p">,</span> <span class="s">&#39;RIDGE_TOP&#39;</span><span class="p">,</span> <span class="s">&#39;MOUNTAINOUS&#39;</span><span class="p">),</span>
+        <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;terrain options&#39;</span><span class="p">)</span>
+    <span class="n">layout</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="s">&#39;SIMPLE&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s">&#39;SIMPLE&#39;</span><span class="p">,</span> <span class="s">&#39;COMPLEX&#39;</span><span class="p">),</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span>
+        <span class="n">desc</span><span class="o">=</span><span class="s">&#39;layout options&#39;</span><span class="p">)</span>
+    <span class="n">farmSize</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;MW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;wind farm size&#39;</span><span class="p">)</span>
+    <span class="n">diameter</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;rotor diameter&#39;</span><span class="p">)</span>
+    <span class="n">nTurbines</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;number of turbines&#39;</span><span class="p">)</span>
+    <span class="n">rockTrenchingLength</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;rock trenching required (</span><span class="si">% o</span><span class="s">f collector cable length)&#39;</span><span class="p">)</span>
+    <span class="n">overheadCollector</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;mi&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;MV overhead collector&#39;</span><span class="p">)</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;MV electrical materials cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">electricalInstallationCost</span><span class="p">(</span><span class="n">Enum2Int</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;terrain&#39;</span><span class="p">),</span>
+            <span class="n">Enum2Int</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;layout&#39;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">farmSize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">diameter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rockTrenchingLength</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">overheadCollector</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">list_deriv_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;diameter&#39;</span><span class="p">,)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;cost&#39;</span><span class="p">,)</span>
+
+        <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span>
+
+    <span class="k">def</span> <span class="nf">provideJ</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">ddiameter</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">deriv_electricalInstallationCost</span><span class="p">(</span><span class="n">Enum2Int</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;terrain&#39;</span><span class="p">),</span>
+            <span class="n">Enum2Int</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">&#39;layout&#39;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rockTrenchingLength</span><span class="p">)</span>
+        <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">ddiameter</span><span class="p">]])</span>
+
+        <span class="k">return</span> <span class="n">J</span>
+
+</div>
+<div class="viewcode-block" id="Substation"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.Substation">[docs]</a><span class="k">class</span> <span class="nc">Substation</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">voltage</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kV&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;interconnect voltage&#39;</span><span class="p">)</span>
+    <span class="n">farmSize</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;MW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;wind farm size&#39;</span><span class="p">)</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;collector substation cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">substationCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">voltage</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">farmSize</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Transmission"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.Transmission">[docs]</a><span class="k">class</span> <span class="nc">Transmission</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">voltage</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kV&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;interconnect voltage&#39;</span><span class="p">)</span>
+    <span class="n">distInter</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;mi&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;distance to interconnect&#39;</span><span class="p">)</span>
+    <span class="n">newSwitchyardRequired</span> <span class="o">=</span> <span class="n">Bool</span><span class="p">(</span><span class="bp">True</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;new switchyard required&#39;</span><span class="p">)</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;transmission line and interconnect cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">transmissionCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">voltage</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">distInter</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">newSwitchyardRequired</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="ProjectMgmt"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.ProjectMgmt">[docs]</a><span class="k">class</span> <span class="nc">ProjectMgmt</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">constructionTime</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;mo&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;construction time&#39;</span><span class="p">)</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;project management cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">projectMgmtCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constructionTime</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Development"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.Development">[docs]</a><span class="k">class</span> <span class="nc">Development</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">developmentFee</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;development fee (in millions of dollars)&#39;</span><span class="p">)</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;development cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">developmentCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">developmentFee</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Insurance"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.Insurance">[docs]</a><span class="k">class</span> <span class="nc">Insurance</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">TCC</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD/kW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;turbine capital cost per kW&#39;</span><span class="p">)</span>
+    <span class="n">farmSize</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;MW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;wind farm size&#39;</span><span class="p">)</span>
+    <span class="n">foundationCost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;foundation cost&#39;</span><span class="p">)</span>
+    <span class="n">performanceBond</span> <span class="o">=</span> <span class="n">Bool</span><span class="p">(</span><span class="bp">False</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;performance bond&#39;</span><span class="p">)</span>
+
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;multiplier portion of insurance cost&#39;</span><span class="p">)</span>
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;constant portion of insurance cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">insuranceMultiplierAndCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">TCC</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">farmSize</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">foundationCost</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">performanceBond</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="s">&#39;alpha&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="s">&#39;cost&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">list_deriv_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;TCC&#39;</span><span class="p">,</span> <span class="s">&#39;foundationCost&#39;</span><span class="p">)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;alpha&#39;</span><span class="p">,</span> <span class="s">&#39;cost&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span>
+
+    <span class="k">def</span> <span class="nf">provideJ</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">dtcc</span><span class="p">,</span> <span class="n">dfoundationcost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">deriv_insuranceMultiplierAndCost</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">farmSize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">performanceBond</span><span class="p">)</span>
+        <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="n">dtcc</span><span class="p">,</span> <span class="n">dfoundationcost</span><span class="p">]])</span>
+
+        <span class="k">return</span> <span class="n">J</span>
+
+</div>
+<div class="viewcode-block" id="Markup"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.Markup">[docs]</a><span class="k">class</span> <span class="nc">Markup</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">transportationCost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;transportation cost&#39;</span><span class="p">)</span>
+    <span class="n">contingency</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;%&#39;</span><span class="p">)</span>
+    <span class="n">warranty</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.02</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;%&#39;</span><span class="p">)</span>
+    <span class="n">useTax</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;%&#39;</span><span class="p">)</span>
+    <span class="n">overhead</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;%&#39;</span><span class="p">)</span>
+    <span class="n">profitMargin</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;%&#39;</span><span class="p">)</span>
+
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;multiplier portion of markup cost&#39;</span><span class="p">)</span>
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;constant portion of markup cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">markupMultiplierAndCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transportationCost</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contingency</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">warranty</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">useTax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">overhead</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">profitMargin</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="s">&#39;alpha&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="s">&#39;cost&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">list_deriv_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;transportationCost&#39;</span><span class="p">,)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;alpha&#39;</span><span class="p">,</span> <span class="s">&#39;cost&#39;</span><span class="p">,)</span>
+
+        <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span>
+
+    <span class="k">def</span> <span class="nf">provideJ</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">dtransportationcost</span> <span class="o">=</span> <span class="n">_landbos</span><span class="o">.</span><span class="n">deriv_markupMultiplierAndCost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">contingency</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warranty</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">useTax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">overhead</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">profitMargin</span><span class="p">)</span>
+        <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="n">dtransportationcost</span><span class="p">]])</span>
+
+        <span class="k">return</span> <span class="n">J</span>
+
+</div>
+<div class="viewcode-block" id="Total"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_land_bosse.nrel_land_bosse.Total">[docs]</a><span class="k">class</span> <span class="nc">Total</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="n">turbine_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">nTurbines</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;number of turbines&#39;</span><span class="p">)</span>
+    <span class="n">transportation_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">engineering_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">powerperf_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">roads_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">compound_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">building_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">foundation_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">erection_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">elecmat_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">elecinst_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">substation_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">transmission_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">projmgmt_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">development_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">insurance_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="n">markup_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+
+    <span class="n">insurance_alpha</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">)</span>
+    <span class="n">markup_alpha</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">)</span>
+
+    <span class="n">multiplier</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">)</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;total BOS cost&#39;</span><span class="p">)</span>
+
+    <span class="n">missing_deriv_policy</span> <span class="o">=</span> <span class="s">&#39;assume_zero&#39;</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transportation_cost</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">engineering_cost</span> <span class="o">+</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">powerperf_cost</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">roads_cost</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">compound_cost</span> <span class="o">+</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">building_cost</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">foundation_cost</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">erection_cost</span> <span class="o">+</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">elecmat_cost</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">elecinst_cost</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">substation_cost</span> <span class="o">+</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">transmission_cost</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">projmgmt_cost</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">development_cost</span> <span class="o">+</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">insurance_cost</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">markup_cost</span>
+
+        <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">insurance_alpha</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">markup_alpha</span>
+
+        <span class="c"># multiplier</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">/=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span>
+
+        <span class="c"># remove TCC so only BOS is left</span>
+        <span class="n">TCC</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_cost</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">-=</span> <span class="n">TCC</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">multiplier</span>
+
+
+    <span class="k">def</span> <span class="nf">list_deriv_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;turbine_cost&#39;</span><span class="p">,</span> <span class="s">&#39;transportation_cost&#39;</span><span class="p">,</span> <span class="s">&#39;engineering_cost&#39;</span><span class="p">,</span> <span class="s">&#39;powerperf_cost&#39;</span><span class="p">,</span>
+            <span class="s">&#39;roads_cost&#39;</span><span class="p">,</span> <span class="s">&#39;compound_cost&#39;</span><span class="p">,</span> <span class="s">&#39;building_cost&#39;</span><span class="p">,</span> <span class="s">&#39;foundation_cost&#39;</span><span class="p">,</span> <span class="s">&#39;erection_cost&#39;</span><span class="p">,</span>
+            <span class="s">&#39;elecmat_cost&#39;</span><span class="p">,</span> <span class="s">&#39;elecinst_cost&#39;</span><span class="p">,</span> <span class="s">&#39;substation_cost&#39;</span><span class="p">,</span> <span class="s">&#39;transmission_cost&#39;</span><span class="p">,</span>
+            <span class="s">&#39;projmgmt_cost&#39;</span><span class="p">,</span> <span class="s">&#39;development_cost&#39;</span><span class="p">,</span> <span class="s">&#39;insurance_cost&#39;</span><span class="p">,</span> <span class="s">&#39;markup_cost&#39;</span><span class="p">,</span> <span class="s">&#39;multiplier&#39;</span><span class="p">)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;cost&#39;</span><span class="p">,)</span>
+
+
+        <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span>
+
+    <span class="k">def</span> <span class="nf">provideJ</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">insurance_alpha</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">markup_alpha</span>
+        <span class="n">dcost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">multiplier</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">18</span><span class="p">)</span>
+        <span class="n">dcost</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">multiplier</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nTurbines</span>
+        <span class="n">dcost</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">multiplier</span>
+
+        <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">dcost</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">J</span>
+
+</div>
+<span class="k">class</span> <span class="nc">NREL_Land_BOSSE</span><span class="p">(</span><span class="n">Assembly</span><span class="p">):</span>
+
+    <span class="n">machine_rating</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;machine rating&#39;</span><span class="p">)</span>
+    <span class="n">rotor_diameter</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;rotor diameter&#39;</span><span class="p">)</span>
+    <span class="n">hub_height</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;hub height&#39;</span><span class="p">)</span>
+    <span class="n">turbine_number</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;number of turbines&#39;</span><span class="p">)</span>
+    <span class="n">voltage</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kV&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;interconnect voltage&#39;</span><span class="p">)</span>
+    <span class="n">distInter</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;mi&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;distance to interconnect&#39;</span><span class="p">)</span>
+    <span class="n">terrain</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="s">&#39;FLAT_TO_ROLLING&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s">&#39;FLAT_TO_ROLLING&#39;</span><span class="p">,</span> <span class="s">&#39;RIDGE_TOP&#39;</span><span class="p">,</span> <span class="s">&#39;MOUNTAINOUS&#39;</span><span class="p">),</span>
+        <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;terrain options&#39;</span><span class="p">)</span>
+    <span class="n">layout</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="s">&#39;SIMPLE&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s">&#39;SIMPLE&#39;</span><span class="p">,</span> <span class="s">&#39;COMPLEX&#39;</span><span class="p">),</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span>
+        <span class="n">desc</span><span class="o">=</span><span class="s">&#39;layout options&#39;</span><span class="p">)</span>
+    <span class="n">soil</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="s">&#39;STANDARD&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s">&#39;STANDARD&#39;</span><span class="p">,</span> <span class="s">&#39;BOUYANT&#39;</span><span class="p">),</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span>
+        <span class="n">desc</span><span class="o">=</span><span class="s">&#39;soil options&#39;</span><span class="p">)</span>
+
+    <span class="n">turbine_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">)</span>
+    <span class="c"># TCC = Float(iotype=&#39;in&#39;, units=&#39;USD/kW&#39;, desc=&#39;turbine capital cost per kW&#39;)</span>
+    <span class="n">RNA_mass</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kg&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;tower top mass&#39;</span><span class="p">)</span>
+
+    <span class="n">multiplier</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">)</span>
+
+    <span class="c"># If left at default of -1 then these values will be calculated</span>
+    <span class="c"># otherwise override with whatever you want</span>
+    <span class="n">constructionTime</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;mo&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;construction time&#39;</span><span class="p">)</span>
+    <span class="n">buildingSize</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;ft**2&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;O&amp;M building size&#39;</span><span class="p">)</span>
+    <span class="n">tempMetTowers</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;temporary meteorological towers&#39;</span><span class="p">)</span>
+    <span class="n">permanentMetTowers</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;permananet meteorological towers&#39;</span><span class="p">)</span>
+    <span class="n">weatherDelayDays</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;d&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;weather delay days&#39;</span><span class="p">)</span>
+    <span class="n">craneBreakdowns</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;crane breakdowns&#39;</span><span class="p">)</span>
+    <span class="n">accessRoadEntrances</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;access road entrances&#39;</span><span class="p">)</span>
+
+    <span class="c"># advanced inputs</span>
+    <span class="n">deliveryAssistRequired</span> <span class="o">=</span> <span class="n">Bool</span><span class="p">(</span><span class="bp">False</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;delivery assist required&#39;</span><span class="p">)</span>
+    <span class="n">padMountTransformer</span> <span class="o">=</span> <span class="n">Bool</span><span class="p">(</span><span class="bp">True</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;pad mount transformer required&#39;</span><span class="p">)</span>
+    <span class="n">newSwitchyardRequired</span> <span class="o">=</span> <span class="n">Bool</span><span class="p">(</span><span class="bp">True</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;new switchyard required&#39;</span><span class="p">)</span>
+    <span class="n">rockTrenchingLength</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;rock trenching required (</span><span class="si">% o</span><span class="s">f collector cable length)&#39;</span><span class="p">)</span>
+    <span class="n">thermalBackfill</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;mi&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;MV thermal backfill&#39;</span><span class="p">)</span>
+    <span class="n">overheadCollector</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;mi&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;MV overhead collector&#39;</span><span class="p">)</span>
+    <span class="n">performanceBond</span> <span class="o">=</span> <span class="n">Bool</span><span class="p">(</span><span class="bp">False</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;performance bond&#39;</span><span class="p">)</span>
+    <span class="n">contingency</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;%&#39;</span><span class="p">)</span>
+    <span class="n">warranty</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.02</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;%&#39;</span><span class="p">)</span>
+    <span class="n">useTax</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;%&#39;</span><span class="p">)</span>
+    <span class="n">overhead</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;%&#39;</span><span class="p">)</span>
+    <span class="n">profitMargin</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;%&#39;</span><span class="p">)</span>
+    <span class="n">developmentFee</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;development fee (in millions of dollars)&#39;</span><span class="p">)</span>
+    <span class="n">transportDist</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;mi&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;transportation distance&#39;</span><span class="p">)</span>
+
+    <span class="n">bos_costs</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;total BOS cost&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">configure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;fs&#39;</span><span class="p">,</span> <span class="n">FarmSize</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;default&#39;</span><span class="p">,</span> <span class="n">Defaults</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;transportation&#39;</span><span class="p">,</span> <span class="n">Transportation</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;engineering&#39;</span><span class="p">,</span> <span class="n">Engineering</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;powerperf&#39;</span><span class="p">,</span> <span class="n">PowerPerformance</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;roads&#39;</span><span class="p">,</span> <span class="n">AccessRoads</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;compound&#39;</span><span class="p">,</span> <span class="n">SiteCompound</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;building&#39;</span><span class="p">,</span> <span class="n">Building</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;foundation&#39;</span><span class="p">,</span> <span class="n">Foundations</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;erection&#39;</span><span class="p">,</span> <span class="n">Erection</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;elecmat&#39;</span><span class="p">,</span> <span class="n">ElecMaterials</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;elecinst&#39;</span><span class="p">,</span> <span class="n">ElecInstallation</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;substation&#39;</span><span class="p">,</span> <span class="n">Substation</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;transmission&#39;</span><span class="p">,</span> <span class="n">Transmission</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;projmgmt&#39;</span><span class="p">,</span> <span class="n">ProjectMgmt</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;development&#39;</span><span class="p">,</span> <span class="n">Development</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;insurance&#39;</span><span class="p">,</span> <span class="n">Insurance</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;markup&#39;</span><span class="p">,</span> <span class="n">Markup</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;total&#39;</span><span class="p">,</span> <span class="n">Total</span><span class="p">())</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">add</span><span class="p">([</span><span class="s">&#39;fs&#39;</span><span class="p">,</span> <span class="s">&#39;default&#39;</span><span class="p">,</span> <span class="s">&#39;transportation&#39;</span><span class="p">,</span> <span class="s">&#39;engineering&#39;</span><span class="p">,</span>
+            <span class="s">&#39;powerperf&#39;</span><span class="p">,</span> <span class="s">&#39;roads&#39;</span><span class="p">,</span> <span class="s">&#39;compound&#39;</span><span class="p">,</span> <span class="s">&#39;building&#39;</span><span class="p">,</span> <span class="s">&#39;foundation&#39;</span><span class="p">,</span>
+            <span class="s">&#39;erection&#39;</span><span class="p">,</span> <span class="s">&#39;elecmat&#39;</span><span class="p">,</span> <span class="s">&#39;elecinst&#39;</span><span class="p">,</span> <span class="s">&#39;substation&#39;</span><span class="p">,</span> <span class="s">&#39;transmission&#39;</span><span class="p">,</span>
+            <span class="s">&#39;projmgmt&#39;</span><span class="p">,</span> <span class="s">&#39;development&#39;</span><span class="p">,</span> <span class="s">&#39;insurance&#39;</span><span class="p">,</span> <span class="s">&#39;markup&#39;</span><span class="p">,</span> <span class="s">&#39;total&#39;</span><span class="p">])</span>
+
+        <span class="c"># connections to fs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;machine_rating&#39;</span><span class="p">,</span> <span class="s">&#39;fs.rating&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_number&#39;</span><span class="p">,</span> <span class="s">&#39;fs.nTurbines&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to default</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_number&#39;</span><span class="p">,</span> <span class="s">&#39;default.nTurbines&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;fs.farmSize&#39;</span><span class="p">,</span> <span class="s">&#39;default.farmSize&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;constructionTime&#39;</span><span class="p">,</span> <span class="s">&#39;default.override_constructionTime&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;accessRoadEntrances&#39;</span><span class="p">,</span> <span class="s">&#39;default.override_accessRoadEntrances&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;weatherDelayDays&#39;</span><span class="p">,</span> <span class="s">&#39;default.override_weatherDelayDays&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;craneBreakdowns&#39;</span><span class="p">,</span> <span class="s">&#39;default.override_craneBreakdowns&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;buildingSize&#39;</span><span class="p">,</span> <span class="s">&#39;default.override_buildingSize&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;permanentMetTowers&#39;</span><span class="p">,</span> <span class="s">&#39;default.override_permanentMetTowers&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;tempMetTowers&#39;</span><span class="p">,</span> <span class="s">&#39;default.override_tempMetTowers&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to transportation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_cost/machine_rating&#39;</span><span class="p">,</span> <span class="s">&#39;transportation.TCC&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;machine_rating&#39;</span><span class="p">,</span> <span class="s">&#39;transportation.rating&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_number&#39;</span><span class="p">,</span> <span class="s">&#39;transportation.nTurbines&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;hub_height&#39;</span><span class="p">,</span> <span class="s">&#39;transportation.hubHeight&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;transportDist&#39;</span><span class="p">,</span> <span class="s">&#39;transportation.transportDist&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to engineering</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_number&#39;</span><span class="p">,</span> <span class="s">&#39;engineering.nTurbines&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;fs.farmSize&#39;</span><span class="p">,</span> <span class="s">&#39;engineering.farmSize&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to powerperf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;hub_height&#39;</span><span class="p">,</span> <span class="s">&#39;powerperf.hubHeight&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;default.permanentMetTowers&#39;</span><span class="p">,</span> <span class="s">&#39;powerperf.permanentMetTowers&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;default.tempMetTowers&#39;</span><span class="p">,</span> <span class="s">&#39;powerperf.tempMetTowers&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to roads</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;terrain&#39;</span><span class="p">,</span> <span class="s">&#39;roads.terrain&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;layout&#39;</span><span class="p">,</span> <span class="s">&#39;roads.layout&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_number&#39;</span><span class="p">,</span> <span class="s">&#39;roads.nTurbines&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;rotor_diameter&#39;</span><span class="p">,</span> <span class="s">&#39;roads.diameter&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;default.constructionTime&#39;</span><span class="p">,</span> <span class="s">&#39;roads.constructionTime&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;default.accessRoadEntrances&#39;</span><span class="p">,</span> <span class="s">&#39;roads.accessRoadEntrances&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to compound</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;default.constructionTime&#39;</span><span class="p">,</span> <span class="s">&#39;compound.constructionTime&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;default.accessRoadEntrances&#39;</span><span class="p">,</span> <span class="s">&#39;compound.accessRoadEntrances&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;fs.farmSize&#39;</span><span class="p">,</span> <span class="s">&#39;compound.farmSize&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to building</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;default.buildingSize&#39;</span><span class="p">,</span> <span class="s">&#39;building.buildingSize&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to foundation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;machine_rating&#39;</span><span class="p">,</span> <span class="s">&#39;foundation.rating&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;rotor_diameter&#39;</span><span class="p">,</span> <span class="s">&#39;foundation.diameter&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;RNA_mass&#39;</span><span class="p">,</span> <span class="s">&#39;foundation.topMass&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;hub_height&#39;</span><span class="p">,</span> <span class="s">&#39;foundation.hubHeight&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;soil&#39;</span><span class="p">,</span> <span class="s">&#39;foundation.soil&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_number&#39;</span><span class="p">,</span> <span class="s">&#39;foundation.nTurbines&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to erection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;machine_rating&#39;</span><span class="p">,</span> <span class="s">&#39;erection.rating&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;hub_height&#39;</span><span class="p">,</span> <span class="s">&#39;erection.hubHeight&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_number&#39;</span><span class="p">,</span> <span class="s">&#39;erection.nTurbines&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;default.weatherDelayDays&#39;</span><span class="p">,</span> <span class="s">&#39;erection.weatherDelayDays&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;default.craneBreakdowns&#39;</span><span class="p">,</span> <span class="s">&#39;erection.craneBreakdowns&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;deliveryAssistRequired&#39;</span><span class="p">,</span> <span class="s">&#39;erection.deliveryAssistRequired&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to elecmat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;terrain&#39;</span><span class="p">,</span> <span class="s">&#39;elecmat.terrain&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;layout&#39;</span><span class="p">,</span> <span class="s">&#39;elecmat.layout&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;fs.farmSize&#39;</span><span class="p">,</span> <span class="s">&#39;elecmat.farmSize&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;rotor_diameter&#39;</span><span class="p">,</span> <span class="s">&#39;elecmat.diameter&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_number&#39;</span><span class="p">,</span> <span class="s">&#39;elecmat.nTurbines&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;padMountTransformer&#39;</span><span class="p">,</span> <span class="s">&#39;elecmat.padMountTransformer&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;thermalBackfill&#39;</span><span class="p">,</span> <span class="s">&#39;elecmat.thermalBackfill&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to elecinst</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;terrain&#39;</span><span class="p">,</span> <span class="s">&#39;elecinst.terrain&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;layout&#39;</span><span class="p">,</span> <span class="s">&#39;elecinst.layout&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;fs.farmSize&#39;</span><span class="p">,</span> <span class="s">&#39;elecinst.farmSize&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;rotor_diameter&#39;</span><span class="p">,</span> <span class="s">&#39;elecinst.diameter&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_number&#39;</span><span class="p">,</span> <span class="s">&#39;elecinst.nTurbines&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;rockTrenchingLength&#39;</span><span class="p">,</span> <span class="s">&#39;elecinst.rockTrenchingLength&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;overheadCollector&#39;</span><span class="p">,</span> <span class="s">&#39;elecinst.overheadCollector&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to substation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;voltage&#39;</span><span class="p">,</span> <span class="s">&#39;substation.voltage&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;fs.farmSize&#39;</span><span class="p">,</span> <span class="s">&#39;substation.farmSize&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to transmission</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;voltage&#39;</span><span class="p">,</span> <span class="s">&#39;transmission.voltage&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;distInter&#39;</span><span class="p">,</span> <span class="s">&#39;transmission.distInter&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;newSwitchyardRequired&#39;</span><span class="p">,</span> <span class="s">&#39;transmission.newSwitchyardRequired&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to projmgmt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;default.constructionTime&#39;</span><span class="p">,</span> <span class="s">&#39;projmgmt.constructionTime&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to development</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;developmentFee&#39;</span><span class="p">,</span> <span class="s">&#39;development.developmentFee&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to insurance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_cost/machine_rating&#39;</span><span class="p">,</span> <span class="s">&#39;insurance.TCC&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;fs.farmSize&#39;</span><span class="p">,</span> <span class="s">&#39;insurance.farmSize&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;foundation.cost&#39;</span><span class="p">,</span> <span class="s">&#39;insurance.foundationCost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;performanceBond&#39;</span><span class="p">,</span> <span class="s">&#39;insurance.performanceBond&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to markup</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;transportation.cost&#39;</span><span class="p">,</span> <span class="s">&#39;markup.transportationCost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;contingency&#39;</span><span class="p">,</span> <span class="s">&#39;markup.contingency&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;warranty&#39;</span><span class="p">,</span> <span class="s">&#39;markup.warranty&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;useTax&#39;</span><span class="p">,</span> <span class="s">&#39;markup.useTax&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;overhead&#39;</span><span class="p">,</span> <span class="s">&#39;markup.overhead&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;profitMargin&#39;</span><span class="p">,</span> <span class="s">&#39;markup.profitMargin&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to total</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.turbine_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_number&#39;</span><span class="p">,</span> <span class="s">&#39;total.nTurbines&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;transportation.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.transportation_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;engineering.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.engineering_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;powerperf.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.powerperf_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;roads.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.roads_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;compound.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.compound_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;building.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.building_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;foundation.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.foundation_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;erection.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.erection_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;elecmat.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.elecmat_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;elecinst.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.elecinst_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;substation.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.substation_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;transmission.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.transmission_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;projmgmt.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.projmgmt_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;development.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.development_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;insurance.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.insurance_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;markup.cost&#39;</span><span class="p">,</span> <span class="s">&#39;total.markup_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;insurance.alpha&#39;</span><span class="p">,</span> <span class="s">&#39;total.insurance_alpha&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;markup.alpha&#39;</span><span class="p">,</span> <span class="s">&#39;total.markup_alpha&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;multiplier&#39;</span><span class="p">,</span> <span class="s">&#39;total.multiplier&#39;</span><span class="p">)</span>
+
+        <span class="c"># connections to outputs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;total.cost&#39;</span><span class="p">,</span> <span class="s">&#39;bos_costs&#39;</span><span class="p">)</span>
+
+
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="n">bos</span> <span class="o">=</span> <span class="n">NREL_Land_BOSSE</span><span class="p">()</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">=</span> <span class="mi">2000</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">rotor_diameter</span> <span class="o">=</span> <span class="mi">110</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">hub_height</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">turbine_number</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">voltage</span> <span class="o">=</span> <span class="mi">137</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">distInter</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">terrain</span> <span class="o">=</span> <span class="s">&#39;FLAT_TO_ROLLING&#39;</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">layout</span> <span class="o">=</span> <span class="s">&#39;COMPLEX&#39;</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">soil</span> <span class="o">=</span> <span class="s">&#39;STANDARD&#39;</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">turbine_cost</span> <span class="o">=</span> <span class="mf">1000.0</span> <span class="o">*</span> <span class="n">bos</span><span class="o">.</span><span class="n">machine_rating</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">RNA_mass</span> <span class="o">=</span> <span class="mf">88.0</span> <span class="o">*</span><span class="mi">1000</span>
+
+    <span class="n">bos</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+    <span class="k">print</span> <span class="n">bos</span><span class="o">.</span><span class="n">bos_costs</span>
+
+
+    <span class="n">c0</span> <span class="o">=</span> <span class="n">bos</span><span class="o">.</span><span class="n">transportation</span><span class="o">.</span><span class="n">cost</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="o">*</span><span class="n">bos</span><span class="o">.</span><span class="n">turbine_cost</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">turbine_cost</span> <span class="o">+=</span> <span class="n">delta</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+    <span class="k">print</span> <span class="p">(</span><span class="n">bos</span><span class="o">.</span><span class="n">transportation</span><span class="o">.</span><span class="n">cost</span> <span class="o">-</span> <span class="n">c0</span><span class="p">)</span><span class="o">/</span><span class="n">delta</span>
+
+    <span class="n">bos</span><span class="o">.</span><span class="n">check_gradient</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;rotor_diameter&#39;</span><span class="p">,</span> <span class="s">&#39;hub_height&#39;</span><span class="p">,</span> <span class="s">&#39;RNA_mass&#39;</span><span class="p">,</span> <span class="s">&#39;turbine_cost&#39;</span><span class="p">],</span> <span class="n">outputs</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;total.cost&#39;</span><span class="p">])</span>
+    <span class="c"># bos.check_gradient(inputs=[&#39;turbine_cost&#39;], outputs=[&#39;transportation.cost&#39;])</span>
+    <span class="c"># bos.check_gradient(inputs=[&#39;rotor_diameter&#39;, &#39;hub_height&#39;, &#39;RNA_mass&#39;, (&#39;transportation.TCC&#39;, &#39;insurance.TCC&#39;)], outputs=[&#39;total.cost&#39;])</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Plant_CostsSE 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2014, NREL.
+      Last updated on Sep 03, 2017.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

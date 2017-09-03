@@ -1,0 +1,277 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Documentation &mdash; Plant_CostsSE 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/nrel.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Plant_CostsSE 0.1.0 documentation" href="index.html" />
+    <link rel="next" title="5. Theory" href="theory.html" />
+    <link rel="prev" title="3. Tutorial" href="tutorial.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="theory.html" title="5. Theory"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tutorial.html" title="3. Tutorial"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Plant_CostsSE 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="documentation">
+<span id="documentation-label"></span><h1>4. Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="documentation-for-nrel-csm-bos">
+<h2>4.1. Documentation for NREL_CSM_BOS<a class="headerlink" href="#documentation-for-nrel-csm-bos" title="Permalink to this headline">¶</a></h2>
+<p>The following inputs and outputs are defined for NREL_CSM_BOS:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">bos_csm_assembly</span><span class="p">(</span><span class="n">Assembly</span><span class="p">):</span>
+
+    <span class="c"># Variables</span>
+    <span class="n">machine_rating</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;turbine machine rating&#39;</span><span class="p">)</span>
+    <span class="n">rotor_diameter</span><span class="o">=</span><span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;rotor diameter&#39;</span><span class="p">)</span>
+    <span class="n">hub_height</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;hub height&#39;</span><span class="p">)</span>
+    <span class="n">RNA_mass</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kg&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Rotor Nacelle Assembly mass&#39;</span><span class="p">)</span>
+    <span class="n">turbine_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Single Turbine Capital _costs&#39;</span><span class="p">)</span>
+    
+    <span class="c"># Parameters</span>
+    <span class="n">turbine_number</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;number of turbines in project&#39;</span><span class="p">)</span>
+    <span class="n">sea_depth</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">iotype</span> <span class="o">=</span> <span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;sea depth for offshore wind plant&#39;</span><span class="p">)</span>
+    <span class="n">year</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="mi">2009</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;year for project start&#39;</span><span class="p">)</span>
+    <span class="n">month</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="n">iotype</span> <span class="o">=</span> <span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span> <span class="s">&#39;month for project start&#39;</span><span class="p">)</span>
+    <span class="n">multiplier</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">)</span>
+
+    <span class="c"># Outputs</span>
+    <span class="n">bos_breakdown</span> <span class="o">=</span> <span class="n">VarTree</span><span class="p">(</span><span class="n">BOSVarTree</span><span class="p">(),</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;BOS cost breakdown&#39;</span><span class="p">)</span>
+    <span class="n">bos_costs</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Overall wind plant balance of station/system costs up to point of comissioning&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="module-plant_costsse.nrel_csm_bos.nrel_csm_bos">
+<span id="referenced-balance-of-station-cost-modules"></span><h3>4.1.1. Referenced Balance of Station Cost Modules<a class="headerlink" href="#module-plant_costsse.nrel_csm_bos.nrel_csm_bos" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="plant_costsse.nrel_csm_bos.nrel_csm_bos.bos_csm_component">
+<em class="property">class </em><tt class="descclassname">plant_costsse.nrel_csm_bos.nrel_csm_bos.</tt><tt class="descname">bos_csm_component</tt><a class="reference internal" href="_modules/plant_costsse/nrel_csm_bos/nrel_csm_bos.html#bos_csm_component"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plant_costsse.nrel_csm_bos.nrel_csm_bos.bos_csm_component" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="plant_costsse.nrel_csm_bos.nrel_csm_bos.bos_csm_assembly">
+<em class="property">class </em><tt class="descclassname">plant_costsse.nrel_csm_bos.nrel_csm_bos.</tt><tt class="descname">bos_csm_assembly</tt><a class="reference internal" href="_modules/plant_costsse/nrel_csm_bos/nrel_csm_bos.html#bos_csm_assembly"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plant_costsse.nrel_csm_bos.nrel_csm_bos.bos_csm_assembly" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-commonse.csmPPI">
+<span id="referenced-ppi-index-models-via-commonse-config"></span><h3>4.1.2. Referenced PPI Index Models (via commonse.config)<a class="headerlink" href="#module-commonse.csmPPI" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="commonse.csmPPI.PPI">
+<em class="property">class </em><tt class="descclassname">commonse.csmPPI.</tt><tt class="descname">PPI</tt><a class="reference internal" href="_modules/commonse/csmPPI.html#PPI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#commonse.csmPPI.PPI" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+<div class="section" id="documentation-for-nrel-csm-opex">
+<h2>4.2. Documentation for NREL_CSM_OPEX<a class="headerlink" href="#documentation-for-nrel-csm-opex" title="Permalink to this headline">¶</a></h2>
+<p>The following inputs and outputs are defined for NREL_CSM_OPEX:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">opex_csm_assembly</span><span class="p">(</span><span class="n">Assembly</span><span class="p">):</span>
+
+    <span class="c"># variables</span>
+    <span class="n">machine_rating</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">units</span> <span class="o">=</span> <span class="s">&#39;kW&#39;</span><span class="p">,</span> <span class="n">iotype</span> <span class="o">=</span> <span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;rated power for a wind turbine&#39;</span><span class="p">)</span>
+    <span class="n">net_aep</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">units</span> <span class="o">=</span> <span class="s">&#39;kW * h&#39;</span><span class="p">,</span> <span class="n">iotype</span> <span class="o">=</span> <span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;annual energy production for the plant&#39;</span><span class="p">)</span>
+
+    <span class="c"># parameters</span>
+    <span class="n">sea_depth</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">iotype</span> <span class="o">=</span> <span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;sea depth for offshore wind plant&#39;</span><span class="p">)</span>
+    <span class="n">year</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="mi">2009</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;yr&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;year for project start&#39;</span><span class="p">)</span>
+    <span class="n">month</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="n">iotype</span> <span class="o">=</span> <span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span> <span class="s">&#39;month for project start&#39;</span><span class="p">)</span> <span class="c"># units = months</span>
+    <span class="n">turbine_number</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">iotype</span> <span class="o">=</span> <span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;number of turbines at plant&#39;</span><span class="p">)</span>
+
+    <span class="c"># Outputs</span>
+    <span class="n">avg_annual_opex</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Average annual Operating Expenditures for a wind plant over its lifetime&#39;</span><span class="p">)</span>
+    <span class="n">opex_breakdown</span> <span class="o">=</span> <span class="n">VarTree</span><span class="p">(</span><span class="n">OPEXVarTree</span><span class="p">(),</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="module-plant_costsse.nrel_csm_opex.nrel_csm_opex">
+<span id="referenced-operational-expenditure-modules"></span><h3>4.2.1. Referenced Operational Expenditure Modules<a class="headerlink" href="#module-plant_costsse.nrel_csm_opex.nrel_csm_opex" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="plant_costsse.nrel_csm_opex.nrel_csm_opex.opex_csm_component">
+<em class="property">class </em><tt class="descclassname">plant_costsse.nrel_csm_opex.nrel_csm_opex.</tt><tt class="descname">opex_csm_component</tt><a class="reference internal" href="_modules/plant_costsse/nrel_csm_opex/nrel_csm_opex.html#opex_csm_component"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plant_costsse.nrel_csm_opex.nrel_csm_opex.opex_csm_component" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="plant_costsse.nrel_csm_opex.nrel_csm_opex.opex_csm_assembly">
+<em class="property">class </em><tt class="descclassname">plant_costsse.nrel_csm_opex.nrel_csm_opex.</tt><tt class="descname">opex_csm_assembly</tt><a class="reference internal" href="_modules/plant_costsse/nrel_csm_opex/nrel_csm_opex.html#opex_csm_assembly"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plant_costsse.nrel_csm_opex.nrel_csm_opex.opex_csm_assembly" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="id1">
+<h3>4.2.2. Referenced PPI Index Models (via commonse.config)<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<span class="target" id="module-commonse.csmPPI"></span><dl class="class">
+<dt>
+<em class="property">class </em><tt class="descclassname">commonse.csmPPI.</tt><tt class="descname">PPI</tt><a class="reference internal" href="_modules/commonse/csmPPI.html#PPI"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+<div class="section" id="documentation-for-ecn-offshore-opex">
+<h2>4.3. Documentation for ECN_Offshore_OPEX<a class="headerlink" href="#documentation-for-ecn-offshore-opex" title="Permalink to this headline">¶</a></h2>
+<p>The following inputs and outputs are defined for NREL_CSM_OPEX:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">opex_ecn_assembly</span><span class="p">(</span><span class="n">Assembly</span><span class="p">):</span>
+
+    <span class="c"># variables</span>
+    <span class="n">turbine_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;turbine system capital costs&#39;</span><span class="p">)</span>
+    <span class="n">machine_rating</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="s">&#39;kW&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span> <span class="s">&#39;wind turbine rated power&#39;</span><span class="p">)</span>
+
+    <span class="c"># parameters</span>
+    <span class="n">turbine_number</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;total number of wind turbines at the plant&#39;</span><span class="p">)</span>
+    <span class="n">project_lifetime</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;project lifetime for wind plant&#39;</span><span class="p">)</span>
+
+    <span class="c"># Outputs</span>
+    <span class="n">avg_annual_opex</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Average annual Operating Expenditures for a wind plant over its lifetime&#39;</span><span class="p">)</span>
+    <span class="n">opex_breakdown</span> <span class="o">=</span> <span class="n">VarTree</span><span class="p">(</span><span class="n">OPEXVarTree</span><span class="p">(),</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">)</span>
+    <span class="n">availability</span>  <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Availability&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="id2">
+<h3>4.3.1. Referenced Operational Expenditure Modules<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<span class="target" id="module-plant_costsse.ecn_offshore_opex.ecn_offshore_opex"></span><dl class="class">
+<dt id="plant_costsse.ecn_offshore_opex.ecn_offshore_opex.opex_ecn_offshore_component">
+<em class="property">class </em><tt class="descclassname">plant_costsse.ecn_offshore_opex.ecn_offshore_opex.</tt><tt class="descname">opex_ecn_offshore_component</tt><a class="reference internal" href="_modules/plant_costsse/ecn_offshore_opex/ecn_offshore_opex.html#opex_ecn_offshore_component"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plant_costsse.ecn_offshore_opex.ecn_offshore_opex.opex_ecn_offshore_component" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="plant_costsse.ecn_offshore_opex.ecn_offshore_opex.opex_ecn_assembly">
+<em class="property">class </em><tt class="descclassname">plant_costsse.ecn_offshore_opex.ecn_offshore_opex.</tt><tt class="descname">opex_ecn_assembly</tt><a class="reference internal" href="_modules/plant_costsse/ecn_offshore_opex/ecn_offshore_opex.html#opex_ecn_assembly"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plant_costsse.ecn_offshore_opex.ecn_offshore_opex.opex_ecn_assembly" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-plant_costsse.ecn_offshore_opex.ecnomXLS">
+<span id="supporting-models-including-excel-wrapper-via-commonse"></span><h3>4.3.2. Supporting Models Including Excel Wrapper (via CommonSE)<a class="headerlink" href="#module-plant_costsse.ecn_offshore_opex.ecnomXLS" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="plant_costsse.ecn_offshore_opex.ecnomXLS.ecnomXLS">
+<em class="property">class </em><tt class="descclassname">plant_costsse.ecn_offshore_opex.ecnomXLS.</tt><tt class="descname">ecnomXLS</tt><a class="reference internal" href="_modules/plant_costsse/ecn_offshore_opex/ecnomXLS.html#ecnomXLS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plant_costsse.ecn_offshore_opex.ecnomXLS.ecnomXLS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<span class="target" id="module-commonse.xcel_wrapper"></span><dl class="class">
+<dt id="commonse.xcel_wrapper.ExcelWrapper">
+<em class="property">class </em><tt class="descclassname">commonse.xcel_wrapper.</tt><tt class="descname">ExcelWrapper</tt><a class="reference internal" href="_modules/commonse/xcel_wrapper.html#ExcelWrapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#commonse.xcel_wrapper.ExcelWrapper" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="id3">
+<h3>4.3.3. Referenced PPI Index Models (via commonse.config)<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<span class="target" id="module-commonse.csmPPI"></span><dl class="class">
+<dt>
+<em class="property">class </em><tt class="descclassname">commonse.csmPPI.</tt><tt class="descname">PPI</tt><a class="reference internal" href="_modules/commonse/csmPPI.html#PPI"><span class="viewcode-link">[source]</span></a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. Documentation</a><ul>
+<li><a class="reference internal" href="#documentation-for-nrel-csm-bos">4.1. Documentation for NREL_CSM_BOS</a><ul>
+<li><a class="reference internal" href="#module-plant_costsse.nrel_csm_bos.nrel_csm_bos">4.1.1. Referenced Balance of Station Cost Modules</a></li>
+<li><a class="reference internal" href="#module-commonse.csmPPI">4.1.2. Referenced PPI Index Models (via commonse.config)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#documentation-for-nrel-csm-opex">4.2. Documentation for NREL_CSM_OPEX</a><ul>
+<li><a class="reference internal" href="#module-plant_costsse.nrel_csm_opex.nrel_csm_opex">4.2.1. Referenced Operational Expenditure Modules</a></li>
+<li><a class="reference internal" href="#id1">4.2.2. Referenced PPI Index Models (via commonse.config)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#documentation-for-ecn-offshore-opex">4.3. Documentation for ECN_Offshore_OPEX</a><ul>
+<li><a class="reference internal" href="#id2">4.3.1. Referenced Operational Expenditure Modules</a></li>
+<li><a class="reference internal" href="#module-plant_costsse.ecn_offshore_opex.ecnomXLS">4.3.2. Supporting Models Including Excel Wrapper (via CommonSE)</a></li>
+<li><a class="reference internal" href="#id3">4.3.3. Referenced PPI Index Models (via commonse.config)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tutorial.html"
+                        title="previous chapter">3. Tutorial</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="theory.html"
+                        title="next chapter">5. Theory</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/documentation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="theory.html" title="5. Theory"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tutorial.html" title="3. Tutorial"
+             >previous</a> |</li>
+        <li><a href="index.html">Plant_CostsSE 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, NREL.
+      Last updated on Oct 07, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

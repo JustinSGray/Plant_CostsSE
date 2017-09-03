@@ -1,0 +1,499 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>plant_costsse.nrel_csm_bos.nrel_csm_bos &mdash; Plant_CostsSE 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nrel.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Plant_CostsSE 0.1.0 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="../../../index.html">Plant_CostsSE 0.1.0 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for plant_costsse.nrel_csm_bos.nrel_csm_bos</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">bos_csm_component.py</span>
+
+<span class="sd">Created by NWTC Systems Engineering Sub-Task on 2012-08-01.</span>
+<span class="sd">Copyright (c) NREL. All rights reserved.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">Assembly</span><span class="p">,</span> <span class="n">VariableTree</span>
+<span class="kn">from</span> <span class="nn">openmdao.main.datatypes.api</span> <span class="kn">import</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Array</span><span class="p">,</span> <span class="n">VarTree</span>
+
+<span class="kn">from</span> <span class="nn">fusedwind.plant_cost.fused_bos_costs</span> <span class="kn">import</span> <span class="n">BOSVarTree</span><span class="p">,</span> <span class="n">ExtendedBOSCostAggregator</span><span class="p">,</span> <span class="n">ExtendedBOSCostModel</span><span class="p">,</span> <span class="n">configure_extended_bos</span>
+<span class="kn">from</span> <span class="nn">fusedwind.interface</span> <span class="kn">import</span> <span class="n">implement_base</span>
+
+<span class="kn">from</span> <span class="nn">commonse.config</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="nd">@implement_base</span><span class="p">(</span><span class="n">ExtendedBOSCostAggregator</span><span class="p">)</span>
+<div class="viewcode-block" id="bos_csm_component"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_csm_bos.nrel_csm_bos.bos_csm_component">[docs]</a><span class="k">class</span> <span class="nc">bos_csm_component</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+
+    <span class="c"># Variables</span>
+    <span class="n">machine_rating</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;turbine machine rating&#39;</span><span class="p">)</span>
+    <span class="n">rotor_diameter</span><span class="o">=</span><span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;rotor diameter&#39;</span><span class="p">)</span>
+    <span class="n">hub_height</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;hub height&#39;</span><span class="p">)</span>
+    <span class="n">RNA_mass</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kg&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Rotor Nacelle Assembly mass&#39;</span><span class="p">)</span>
+    <span class="n">turbine_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Single Turbine Capital _costs&#39;</span><span class="p">)</span>
+    
+    <span class="c"># Parameters</span>
+    <span class="n">turbine_number</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;number of turbines in project&#39;</span><span class="p">)</span>
+    <span class="n">sea_depth</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">iotype</span> <span class="o">=</span> <span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;sea depth for offshore wind plant&#39;</span><span class="p">)</span>
+    <span class="n">year</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="mi">2009</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;year for project start&#39;</span><span class="p">)</span>
+    <span class="n">month</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="n">iotype</span> <span class="o">=</span> <span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span> <span class="s">&#39;month for project start&#39;</span><span class="p">)</span>
+    <span class="n">multiplier</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">)</span>
+
+    <span class="c"># Outputs</span>
+    <span class="n">bos_breakdown</span> <span class="o">=</span> <span class="n">VarTree</span><span class="p">(</span><span class="n">BOSVarTree</span><span class="p">(),</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;BOS cost breakdown&#39;</span><span class="p">)</span>
+    <span class="n">bos_costs</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Overall wind plant balance of station/system costs up to point of comissioning&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        OpenMDAO component to wrap BOS model of the NREL _cost and Scaling Model (csmBOS.py)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#super(bos_csm_component, self).__init__() #update for FUSED - not recognizing bos_csm_component super due to decorator</span>
+        <span class="n">Component</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="c">#controls what happens if derivatives are missing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">missing_deriv_policy</span> <span class="o">=</span> <span class="s">&#39;assume_zero&#39;</span> 
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes BOS model of the NREL _cost and Scaling Model to estimate wind plant BOS costs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># print &quot;In {0}.execute()...&quot;.format(self.__class__)</span>
+
+        <span class="n">lPrmtsCostCoeff1</span> <span class="o">=</span> <span class="mf">9.94E-04</span>
+        <span class="n">lPrmtsCostCoeff2</span> <span class="o">=</span> <span class="mf">20.31</span>
+        <span class="n">oPrmtsCostFactor</span> <span class="o">=</span> <span class="mf">37.0</span> <span class="c"># $/kW (2003)</span>
+        <span class="n">scourCostFactor</span> <span class="o">=</span>  <span class="mf">55.0</span> <span class="c"># $/kW (2003)</span>
+        <span class="n">ptstgCostFactor</span> <span class="o">=</span>  <span class="mf">20.0</span> <span class="c"># $/kW (2003)</span>
+        <span class="n">ossElCostFactor</span> <span class="o">=</span> <span class="mf">260.0</span> <span class="c"># $/kW (2003) shallow</span>
+        <span class="n">ostElCostFactor</span> <span class="o">=</span> <span class="mf">290.0</span> <span class="c"># $/kW (2003) transitional</span>
+        <span class="n">ostSTransFactor</span>  <span class="o">=</span>  <span class="mf">25.0</span> <span class="c"># $/kW (2003)</span>
+        <span class="n">ostTTransFactor</span>  <span class="o">=</span>  <span class="mf">77.0</span> <span class="c"># $/kW (2003)</span>
+        <span class="n">osInstallFactor</span>  <span class="o">=</span> <span class="mf">100.0</span> <span class="c"># $/kW (2003) shallow &amp; trans</span>
+        <span class="n">suppInstallFactor</span> <span class="o">=</span> <span class="mf">330.0</span> <span class="c"># $/kW (2003) trans additional</span>
+        <span class="n">paiCost</span>         <span class="o">=</span> <span class="mf">60000.0</span> <span class="c"># per turbine</span>
+
+        <span class="n">suretyBRate</span>     <span class="o">=</span> <span class="mf">0.03</span>  <span class="c"># 3% of ICC</span>
+        <span class="n">suretyBond</span>      <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="c">#set variables</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sea_depth</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>            <span class="c"># type of plant # 1: Land, 2: &lt; 30m, 3: &lt; 60m, 4: &gt;= 60m</span>
+            <span class="n">iDepth</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">sea_depth</span> <span class="o">&lt;</span> <span class="mi">30</span><span class="p">:</span>
+            <span class="n">iDepth</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">sea_depth</span> <span class="o">&lt;</span> <span class="mi">60</span><span class="p">:</span>
+            <span class="n">iDepth</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">iDepth</span> <span class="o">=</span> <span class="mi">4</span>
+
+        <span class="c"># initialize self.ppi index calculator</span>
+        <span class="k">if</span> <span class="n">iDepth</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">ref_yr</span>  <span class="o">=</span> <span class="mi">2002</span>
+            <span class="n">ref_mon</span> <span class="o">=</span>    <span class="mi">9</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ref_yr</span> <span class="o">=</span> <span class="mi">2003</span>
+            <span class="n">ref_mon</span> <span class="o">=</span> <span class="mi">9</span>
+        <span class="n">ppi</span><span class="o">.</span><span class="n">ref_yr</span> <span class="o">=</span> <span class="n">ref_yr</span>
+        <span class="n">ppi</span><span class="o">.</span><span class="n">ref_mon</span> <span class="o">=</span> <span class="n">ref_mon</span>
+        <span class="n">ppi</span><span class="o">.</span><span class="n">curr_yr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">year</span>
+        <span class="n">ppi</span><span class="o">.</span><span class="n">curr_mon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">month</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_diameter</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_hheight</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_rating</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="c"># foundation costs</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">iDepth</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span> <span class="c"># land</span>
+            <span class="n">fcCoeff</span> <span class="o">=</span> <span class="mf">303.23</span>
+            <span class="n">fcExp</span>   <span class="o">=</span> <span class="mf">0.4037</span>
+            <span class="n">SweptArea</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rotor_diameter</span><span class="o">*</span><span class="mf">0.5</span><span class="p">)</span><span class="o">**</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+            <span class="n">foundation_cost</span> <span class="o">=</span> <span class="n">fcCoeff</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hub_height</span><span class="o">*</span><span class="n">SweptArea</span><span class="p">)</span><span class="o">**</span><span class="n">fcExp</span>
+            <span class="n">fndnCostEscalator</span> <span class="o">=</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_FND&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_diameter</span> <span class="o">=</span> <span class="n">fndnCostEscalator</span> <span class="o">*</span> <span class="n">fcCoeff</span> <span class="o">*</span> <span class="n">fcExp</span> <span class="o">*</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">hub_height</span><span class="o">*</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rotor_diameter</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span><span class="o">**</span><span class="p">(</span><span class="n">fcExp</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hub_height</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_hheight</span> <span class="o">=</span> <span class="n">fndnCostEscalator</span> <span class="o">*</span> <span class="n">fcCoeff</span> <span class="o">*</span> <span class="n">fcExp</span> <span class="o">*</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">hub_height</span><span class="o">*</span><span class="n">SweptArea</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">fcExp</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="n">SweptArea</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">iDepth</span> <span class="o">==</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="n">sscf</span> <span class="o">=</span> <span class="mf">300.0</span> <span class="c"># $/kW</span>
+            <span class="n">foundation_cost</span> <span class="o">=</span> <span class="n">sscf</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span>
+            <span class="n">fndnCostEscalator</span> <span class="o">=</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_MPF&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_rating</span> <span class="o">=</span> <span class="n">fndnCostEscalator</span> <span class="o">*</span> <span class="n">sscf</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">iDepth</span> <span class="o">==</span> <span class="mi">3</span><span class="p">):</span>
+            <span class="n">sscf</span> <span class="o">=</span> <span class="mf">450.0</span> <span class="c"># $/kW</span>
+            <span class="n">foundation_cost</span> <span class="o">=</span> <span class="n">sscf</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span>
+            <span class="n">fndnCostEscalator</span> <span class="o">=</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OAI&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_rating</span> <span class="o">=</span> <span class="n">fndnCostEscalator</span> <span class="o">*</span> <span class="n">sscf</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">iDepth</span> <span class="o">==</span> <span class="mi">4</span><span class="p">):</span>
+            <span class="n">foundation_cost</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">fndnCostEscalator</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+        <span class="n">foundation_cost</span> <span class="o">*=</span> <span class="n">fndnCostEscalator</span>
+
+        <span class="c"># cost calculations</span>
+        <span class="n">tpC1</span>  <span class="o">=</span><span class="mf">0.00001581</span>
+        <span class="n">tpC2</span>  <span class="o">=-</span><span class="mf">0.0375</span>
+        <span class="n">tpInt</span> <span class="o">=</span><span class="mf">54.7</span>
+        <span class="n">tFact</span> <span class="o">=</span> <span class="n">tpC1</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">+</span> <span class="n">tpC2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">+</span> <span class="n">tpInt</span>
+
+        <span class="n">roadsCivil_costs</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">portStaging_costs</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">pai_costs</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">scour_costs</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_diameter</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_hheight</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_rating</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_rating</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_rating</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_rating</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_rating</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_rating</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">iDepth</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">engPermits_costs</span>  <span class="o">=</span> <span class="p">(</span><span class="n">lPrmtsCostCoeff1</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span><span class="p">)</span> <span class="o">+</span> \
+                               <span class="p">(</span><span class="n">lPrmtsCostCoeff2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span><span class="p">)</span>
+            <span class="n">ppi</span><span class="o">.</span><span class="n">ref_mon</span> <span class="o">=</span> <span class="mi">3</span>
+            <span class="n">engPermits_costs</span> <span class="o">*=</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_LPM&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_rating</span> <span class="o">=</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_LPM&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">lPrmtsCostCoeff1</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">+</span> <span class="n">lPrmtsCostCoeff2</span><span class="p">)</span>
+            <span class="n">ppi</span><span class="o">.</span><span class="n">ref_mon</span> <span class="o">=</span> <span class="mi">9</span>
+
+            <span class="n">elC1</span>  <span class="o">=</span> <span class="mf">3.49E-06</span>
+            <span class="n">elC2</span>  <span class="o">=</span> <span class="o">-</span><span class="mf">0.0221</span>
+            <span class="n">elInt</span> <span class="o">=</span> <span class="mf">109.7</span>
+            <span class="n">eFact</span> <span class="o">=</span> <span class="n">elC1</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">+</span> <span class="n">elC2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">+</span> <span class="n">elInt</span>
+            <span class="n">electrical_costs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">eFact</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_LEL&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_rating</span> <span class="o">=</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_LEL&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">3.</span> <span class="o">*</span> <span class="n">elC1</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span><span class="o">**</span><span class="mf">2.</span> <span class="o">+</span> \
+                                    <span class="mf">2.</span> <span class="o">*</span> <span class="n">elC2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">+</span> <span class="n">elInt</span><span class="p">)</span>
+
+            <span class="n">rcC1</span>  <span class="o">=</span> <span class="mf">2.17E-06</span>
+            <span class="n">rcC2</span>  <span class="o">=</span> <span class="o">-</span><span class="mf">0.0145</span>
+            <span class="n">rcInt</span> <span class="o">=</span><span class="mf">69.54</span>
+            <span class="n">rFact</span> <span class="o">=</span> <span class="n">rcC1</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">+</span> <span class="n">rcC2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">+</span> <span class="n">rcInt</span>
+            <span class="n">roadsCivil_costs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">rFact</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_RDC&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_rating</span> <span class="o">=</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_RDC&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">3.</span> <span class="o">*</span> <span class="n">rcC1</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span><span class="o">**</span><span class="mf">2.</span> <span class="o">+</span> \
+                                     <span class="mf">2.</span> <span class="o">*</span> <span class="n">rcC2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">+</span> <span class="n">rcInt</span><span class="p">)</span>
+
+            <span class="n">iCoeff</span> <span class="o">=</span> <span class="mf">1.965</span>
+            <span class="n">iExp</span>   <span class="o">=</span> <span class="mf">1.1736</span>
+            <span class="n">installation_costs</span> <span class="o">=</span> <span class="n">iCoeff</span> <span class="o">*</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">hub_height</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">rotor_diameter</span><span class="p">)</span><span class="o">**</span><span class="n">iExp</span><span class="p">)</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_LAI&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_diameter</span> <span class="o">=</span> <span class="n">iCoeff</span> <span class="o">*</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">hub_height</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">rotor_diameter</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">iExp</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hub_height</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_LAI&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_hheight</span> <span class="o">=</span> <span class="n">iCoeff</span> <span class="o">*</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">hub_height</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">rotor_diameter</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">iExp</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">rotor_diameter</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_LAI&#39;</span><span class="p">)</span>
+
+            <span class="n">transportation_costs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">tFact</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_TPT&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_rating</span> <span class="o">=</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_TPT&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">tpC1</span><span class="o">*</span> <span class="mf">3.</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span><span class="o">**</span><span class="mf">2.</span> <span class="o">+</span> \
+                                   <span class="n">tpC2</span><span class="o">*</span> <span class="mf">2.</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">+</span> <span class="n">tpInt</span> <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="p">(</span><span class="n">iDepth</span> <span class="o">==</span> <span class="mi">2</span><span class="p">):</span>  <span class="c"># offshore shallow</span>
+            <span class="n">ppi</span><span class="o">.</span><span class="n">ref_yr</span> <span class="o">=</span> <span class="mi">2003</span>
+            <span class="n">pai_costs</span>            <span class="o">=</span> <span class="n">paiCost</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_PAE&#39;</span><span class="p">)</span>
+            <span class="n">portStaging_costs</span>    <span class="o">=</span> <span class="n">ptstgCostFactor</span>  <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_STP&#39;</span><span class="p">)</span> <span class="c"># 1.415538133</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_rating</span> <span class="o">=</span> <span class="n">ptstgCostFactor</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_STP&#39;</span><span class="p">)</span>
+            <span class="n">engPermits_costs</span>     <span class="o">=</span> <span class="n">oPrmtsCostFactor</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OPM&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_rating</span> <span class="o">=</span> <span class="n">oPrmtsCostFactor</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OPM&#39;</span><span class="p">)</span>
+            <span class="n">scour_costs</span>         <span class="o">=</span> <span class="n">scourCostFactor</span>  <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_STP&#39;</span><span class="p">)</span> <span class="c"># 1.415538133#</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_rating</span> <span class="o">=</span> <span class="n">scourCostFactor</span>  <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_STP&#39;</span><span class="p">)</span>
+            <span class="n">installation_costs</span>   <span class="o">=</span> <span class="n">osInstallFactor</span>  <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OAI&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_rating</span> <span class="o">=</span> <span class="n">osInstallFactor</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OAI&#39;</span><span class="p">)</span>
+            <span class="n">electrical_costs</span>     <span class="o">=</span> <span class="n">ossElCostFactor</span>  <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OEL&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_rating</span> <span class="o">=</span> <span class="n">ossElCostFactor</span>  <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OEL&#39;</span><span class="p">)</span>
+            <span class="n">ppi</span><span class="o">.</span><span class="n">ref_yr</span>  <span class="o">=</span> <span class="mi">2002</span>
+            <span class="n">transportation_costs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">tFact</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_TPT&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_rating</span> <span class="o">=</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_TPT&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">tpC1</span><span class="o">*</span> <span class="mf">3.</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span><span class="o">**</span><span class="mf">2.</span> <span class="o">+</span> \
+                                   <span class="n">tpC2</span><span class="o">*</span> <span class="mf">2.</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">+</span> <span class="n">tpInt</span> <span class="p">)</span>
+            <span class="n">ppi</span><span class="o">.</span><span class="n">ref_yr</span> <span class="o">=</span> <span class="mi">2003</span>
+
+        <span class="k">elif</span> <span class="p">(</span><span class="n">iDepth</span> <span class="o">==</span> <span class="mi">3</span><span class="p">):</span>  <span class="c"># offshore transitional depth</span>
+            <span class="n">ppi</span><span class="o">.</span><span class="n">ref_yr</span> <span class="o">=</span> <span class="mi">2003</span>
+            <span class="n">turbInstall</span>   <span class="o">=</span> <span class="n">osInstallFactor</span>  <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OAI&#39;</span><span class="p">)</span>
+            <span class="n">supportInstall</span> <span class="o">=</span> <span class="n">suppInstallFactor</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OAI&#39;</span><span class="p">)</span>
+            <span class="n">installation_costs</span> <span class="o">=</span> <span class="n">turbInstall</span> <span class="o">+</span> <span class="n">supportInstall</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_rating</span> <span class="o">=</span> <span class="p">(</span><span class="n">osInstallFactor</span> <span class="o">+</span> <span class="n">suppInstallFactor</span><span class="p">)</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OAI&#39;</span><span class="p">)</span>
+            <span class="n">pai_costs</span>          <span class="o">=</span> <span class="n">paiCost</span>                          <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_PAE&#39;</span><span class="p">)</span>
+            <span class="n">electrical_costs</span>     <span class="o">=</span> <span class="n">ostElCostFactor</span>  <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OEL&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_rating</span> <span class="o">=</span> <span class="n">ossElCostFactor</span>  <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OEL&#39;</span><span class="p">)</span>
+            <span class="n">portStaging_costs</span>   <span class="o">=</span> <span class="n">ptstgCostFactor</span>  <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_STP&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_rating</span> <span class="o">=</span> <span class="n">ptstgCostFactor</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_STP&#39;</span><span class="p">)</span>
+            <span class="n">engPermits_costs</span>     <span class="o">=</span> <span class="n">oPrmtsCostFactor</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OPM&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_rating</span> <span class="o">=</span> <span class="n">oPrmtsCostFactor</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OPM&#39;</span><span class="p">)</span>
+            <span class="n">scour_costs</span>          <span class="o">=</span> <span class="n">scourCostFactor</span>  <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_STP&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_rating</span> <span class="o">=</span> <span class="n">scourCostFactor</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_STP&#39;</span><span class="p">)</span>
+            <span class="n">ppi</span><span class="o">.</span><span class="n">ref_yr</span>  <span class="o">=</span> <span class="mi">2002</span>
+            <span class="n">turbTrans</span>           <span class="o">=</span> <span class="n">ostTTransFactor</span>  <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_TPT&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_rating</span> <span class="o">=</span> <span class="n">ostTTransFactor</span>  <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_TPT&#39;</span><span class="p">)</span>
+            <span class="n">ppi</span><span class="o">.</span><span class="n">ref_yr</span> <span class="o">=</span> <span class="mi">2003</span>
+            <span class="n">supportTrans</span>        <span class="o">=</span> <span class="n">ostSTransFactor</span>  <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OAI&#39;</span><span class="p">)</span>
+            <span class="n">transportation_costs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbTrans</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">supportTrans</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_rating</span> <span class="o">+=</span> <span class="n">ostSTransFactor</span>  <span class="o">*</span> <span class="n">ppi</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="s">&#39;IPPI_OAI&#39;</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="p">(</span><span class="n">iDepth</span> <span class="o">==</span> <span class="mi">4</span><span class="p">):</span>  <span class="c"># offshore deep</span>
+            <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">csmBOS: Add costCat 4 code</span><span class="se">\n\n</span><span class="s">&quot;</span>
+
+        <span class="n">bos_costs</span> <span class="o">=</span> <span class="n">foundation_cost</span> <span class="o">+</span> \
+                    <span class="n">transportation_costs</span> <span class="o">+</span> \
+                    <span class="n">roadsCivil_costs</span>    <span class="o">+</span> \
+                    <span class="n">portStaging_costs</span>   <span class="o">+</span> \
+                    <span class="n">installation_costs</span>   <span class="o">+</span> \
+                    <span class="n">electrical_costs</span>     <span class="o">+</span> \
+                    <span class="n">engPermits_costs</span>    <span class="o">+</span> \
+                    <span class="n">pai_costs</span>          <span class="o">+</span> \
+                    <span class="n">scour_costs</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_tcc</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sea_depth</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">):</span>
+            <span class="n">suretyBond</span> <span class="o">=</span> <span class="n">suretyBRate</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">turbine_cost</span> <span class="o">+</span> <span class="n">bos_costs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_tcc</span> <span class="o">=</span> <span class="n">suretyBRate</span>
+            <span class="n">d_surety_d_rating</span> <span class="o">=</span> <span class="n">suretyBRate</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_rating</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_rating</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_rating</span> <span class="o">+</span> \
+                          <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_rating</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_rating</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_rating</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_rating</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_rating</span> <span class="o">+=</span> <span class="n">d_surety_d_rating</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">suretyBond</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bos_costs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span> <span class="o">*</span> <span class="p">(</span><span class="n">bos_costs</span> <span class="o">+</span> <span class="n">suretyBond</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bos_costs</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">multiplier</span>  <span class="c"># TODO: add to gradients</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bos_breakdown</span><span class="o">.</span><span class="n">development_costs</span> <span class="o">=</span> <span class="n">engPermits_costs</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bos_breakdown</span><span class="o">.</span><span class="n">preparation_and_staging_costs</span> <span class="o">=</span> <span class="p">(</span><span class="n">roadsCivil_costs</span> <span class="o">+</span> <span class="n">portStaging_costs</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bos_breakdown</span><span class="o">.</span><span class="n">transportation_costs</span> <span class="o">=</span> <span class="p">(</span><span class="n">transportation_costs</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bos_breakdown</span><span class="o">.</span><span class="n">foundation_and_substructure_costs</span> <span class="o">=</span> <span class="n">foundation_cost</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bos_breakdown</span><span class="o">.</span><span class="n">electrical_costs</span> <span class="o">=</span> <span class="n">electrical_costs</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bos_breakdown</span><span class="o">.</span><span class="n">assembly_and_installation_costs</span> <span class="o">=</span> <span class="n">installation_costs</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bos_breakdown</span><span class="o">.</span><span class="n">soft_costs</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bos_breakdown</span><span class="o">.</span><span class="n">other_costs</span> <span class="o">=</span> <span class="p">(</span><span class="n">pai_costs</span> <span class="o">+</span> <span class="n">scour_costs</span> <span class="o">+</span> <span class="n">suretyBond</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
+  
+        <span class="c"># derivatives</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_rating</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_rating</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_rating</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_rating</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_rating</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_rating</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_rating</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_rating</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_cost_d_rating</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_rating</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_rating</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_rating</span> <span class="o">+</span> \
+                          <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_rating</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_rating</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_rating</span> <span class="o">+</span> \
+                          <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_rating</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_rating</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_diameter</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_diameter</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_diameter</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="c">#self.d_foundation_d_diameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_diameter</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="c">#self.d_assembly_d_diameter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_diameter</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_diameter</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_cost_d_diameter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_diameter</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_diameter</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_diameter</span> <span class="o">+</span> \
+                          <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_diameter</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_diameter</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_diameter</span> <span class="o">+</span> \
+                          <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_diameter</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_diameter</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_tcc</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_tcc</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_tcc</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_tcc</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_tcc</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_tcc</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_tcc</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_tcc</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turbine_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_cost_d_tcc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_tcc</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_tcc</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_tcc</span> <span class="o">+</span> \
+                          <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_tcc</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_tcc</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_tcc</span> <span class="o">+</span> \
+                          <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_tcc</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_tcc</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_hheight</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_hheight</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_hheight</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="c">#self.d_foundation_d_hheight</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_hheight</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="c">#self.d_assembly_d_hheight</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_hheight</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_hheight</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_cost_d_hheight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_hheight</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_hheight</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_hheight</span> <span class="o">+</span> \
+                          <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_hheight</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_hheight</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_hheight</span> <span class="o">+</span> \
+                          <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_hheight</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_hheight</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_rna</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_rna</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_rna</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_rna</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_rna</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_rna</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_rna</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_rna</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_cost_d_rna</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_rna</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_rna</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_rna</span> <span class="o">+</span> \
+                          <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_rna</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_rna</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_rna</span> <span class="o">+</span> \
+                          <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_rna</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_rna</span>
+
+    <span class="k">def</span> <span class="nf">list_deriv_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;machine_rating&#39;</span><span class="p">,</span> <span class="s">&#39;rotor_diameter&#39;</span><span class="p">,</span> <span class="s">&#39;turbine_cost&#39;</span><span class="p">,</span> <span class="s">&#39;hub_height&#39;</span><span class="p">,</span> <span class="s">&#39;RNA_mass&#39;</span><span class="p">]</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;bos_breakdown.development_costs&#39;</span><span class="p">,</span> <span class="s">&#39;bos_breakdown.preparation_and_staging_costs&#39;</span><span class="p">,</span>\
+                   <span class="s">&#39;bos_breakdown.transportation_costs&#39;</span><span class="p">,</span> <span class="s">&#39;bos_breakdown.foundation_and_substructure_costs&#39;</span><span class="p">,</span>\
+                   <span class="s">&#39;bos_breakdown.electrical_costs&#39;</span><span class="p">,</span> <span class="s">&#39;bos_breakdown.assembly_and_installation_costs&#39;</span><span class="p">,</span>\
+                   <span class="s">&#39;bos_breakdown.soft_costs&#39;</span><span class="p">,</span> <span class="s">&#39;bos_breakdown.other_costs&#39;</span><span class="p">,</span> <span class="s">&#39;bos_costs&#39;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span>
+
+    <span class="k">def</span> <span class="nf">provideJ</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_rating</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_diameter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_tcc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_hheight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_development_d_rna</span><span class="p">],</span>\
+                           <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_rating</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_diameter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_tcc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_hheight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_preparation_d_rna</span><span class="p">],</span>\
+                           <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_rating</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_diameter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_tcc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_hheight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_transport_d_rna</span><span class="p">],</span>\
+                           <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_rating</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_diameter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_tcc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_hheight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_foundation_d_rna</span><span class="p">],</span>\
+                           <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_rating</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_diameter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_tcc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_hheight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_electrical_d_rna</span><span class="p">],</span>\
+                           <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_rating</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_diameter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_tcc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_hheight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_assembly_d_rna</span><span class="p">],</span>\
+                           <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_rating</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_diameter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_tcc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_hheight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_soft_d_rna</span><span class="p">],</span>\
+                           <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_rating</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_diameter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_tcc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_hheight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_other_d_rna</span><span class="p">],</span>\
+                           <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">d_cost_d_rating</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_cost_d_diameter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_cost_d_tcc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_cost_d_hheight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_cost_d_rna</span><span class="p">]])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">J</span>
+
+</div>
+<span class="nd">@implement_base</span><span class="p">(</span><span class="n">ExtendedBOSCostModel</span><span class="p">)</span>
+<div class="viewcode-block" id="bos_csm_assembly"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.nrel_csm_bos.nrel_csm_bos.bos_csm_assembly">[docs]</a><span class="k">class</span> <span class="nc">bos_csm_assembly</span><span class="p">(</span><span class="n">Assembly</span><span class="p">):</span>
+
+    <span class="c"># Variables</span>
+    <span class="n">machine_rating</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kW&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;turbine machine rating&#39;</span><span class="p">)</span>
+    <span class="n">rotor_diameter</span><span class="o">=</span><span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;rotor diameter&#39;</span><span class="p">)</span>
+    <span class="n">hub_height</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;hub height&#39;</span><span class="p">)</span>
+    <span class="n">RNA_mass</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;kg&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Rotor Nacelle Assembly mass&#39;</span><span class="p">)</span>
+    <span class="n">turbine_cost</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;USD&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Single Turbine Capital _costs&#39;</span><span class="p">)</span>
+    
+    <span class="c"># Parameters</span>
+    <span class="n">turbine_number</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;number of turbines in project&#39;</span><span class="p">)</span>
+    <span class="n">sea_depth</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">iotype</span> <span class="o">=</span> <span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s">&#39;sea depth for offshore wind plant&#39;</span><span class="p">)</span>
+    <span class="n">year</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="mi">2009</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;year for project start&#39;</span><span class="p">)</span>
+    <span class="n">month</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="n">iotype</span> <span class="o">=</span> <span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span> <span class="s">&#39;month for project start&#39;</span><span class="p">)</span>
+    <span class="n">multiplier</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">)</span>
+
+    <span class="c"># Outputs</span>
+    <span class="n">bos_breakdown</span> <span class="o">=</span> <span class="n">VarTree</span><span class="p">(</span><span class="n">BOSVarTree</span><span class="p">(),</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;BOS cost breakdown&#39;</span><span class="p">)</span>
+    <span class="n">bos_costs</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Overall wind plant balance of station/system costs up to point of comissioning&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">configure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">bos_csm_assembly</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">configure</span><span class="p">()</span>
+
+        <span class="n">configure_extended_bos</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;bos&#39;</span><span class="p">,</span><span class="n">bos_csm_component</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;machine_rating&#39;</span><span class="p">,</span><span class="s">&#39;bos.machine_rating&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;rotor_diameter&#39;</span><span class="p">,</span><span class="s">&#39;bos.rotor_diameter&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;hub_height&#39;</span><span class="p">,</span><span class="s">&#39;bos.hub_height&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;RNA_mass&#39;</span><span class="p">,</span><span class="s">&#39;bos.RNA_mass&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_cost&#39;</span><span class="p">,</span><span class="s">&#39;bos.turbine_cost&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;turbine_number&#39;</span><span class="p">,</span><span class="s">&#39;bos.turbine_number&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;sea_depth&#39;</span><span class="p">,</span><span class="s">&#39;bos.sea_depth&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;year&#39;</span><span class="p">,</span><span class="s">&#39;bos.year&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;month&#39;</span><span class="p">,</span><span class="s">&#39;bos.month&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;multiplier&#39;</span><span class="p">,</span><span class="s">&#39;bos.multiplier&#39;</span><span class="p">)</span>
+
+<span class="c">#-----------------------------------------------------------------</span>
+</div>
+<span class="k">def</span> <span class="nf">example</span><span class="p">():</span>
+
+    <span class="c"># simple test of module</span>
+    <span class="n">bos</span> <span class="o">=</span> <span class="n">bos_csm_assembly</span><span class="p">()</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">machine_rating</span> <span class="o">=</span> <span class="mf">5000.0</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">rotor_diameter</span> <span class="o">=</span> <span class="mf">126.0</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">turbine_cost</span> <span class="o">=</span> <span class="mf">5950209.28</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">hub_height</span> <span class="o">=</span> <span class="mf">90.0</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">RNA_mass</span> <span class="o">=</span> <span class="mf">256634.5</span> <span class="c"># RNA mass is not used in this simple model</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">turbine_number</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">sea_depth</span> <span class="o">=</span> <span class="mf">20.0</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">year</span> <span class="o">=</span> <span class="mi">2009</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">month</span> <span class="o">=</span> <span class="mi">12</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">multiplier</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="n">bos</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+    <span class="k">print</span> <span class="s">&quot;Balance of Station Costs for an offshore wind plant with 100 NREL 5 MW turbines&quot;</span>
+    <span class="k">print</span> <span class="s">&quot;BOS cost offshore: ${0:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bos</span><span class="o">.</span><span class="n">bos_costs</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;BOS cost per turbine: ${0:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bos</span><span class="o">.</span><span class="n">bos_costs</span> <span class="o">/</span> <span class="n">bos</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+    <span class="k">print</span>
+
+    <span class="n">bos</span><span class="o">.</span><span class="n">sea_depth</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">bos</span><span class="o">.</span><span class="n">turbine_cost</span> <span class="o">=</span> <span class="mf">5229222.77</span>
+
+    <span class="n">bos</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+    <span class="k">print</span> <span class="s">&quot;Balance of Station Costs for an land-based wind plant with 100 NREL 5 MW turbines&quot;</span>
+    <span class="k">print</span> <span class="s">&quot;BOS cost land-based: ${0:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bos</span><span class="o">.</span><span class="n">bos_costs</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;BOS cost per turbine: ${0:.2f} USD&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bos</span><span class="o">.</span><span class="n">bos_costs</span> <span class="o">/</span> <span class="n">bos</span><span class="o">.</span><span class="n">turbine_number</span><span class="p">)</span>
+    <span class="k">print</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+
+    <span class="n">example</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="../../../index.html">Plant_CostsSE 0.1.0 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, NREL.
+      Last updated on Oct 07, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

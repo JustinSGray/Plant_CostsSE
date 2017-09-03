@@ -1,0 +1,436 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>plant_costsse.ecn_offshore_opex.ecnomXLS &mdash; Plant_CostsSE 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nrel.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Plant_CostsSE 0.1.0 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="../../../index.html">Plant_CostsSE 0.1.0 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for plant_costsse.ecn_offshore_opex.ecnomXLS</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">ecnomXLS.py</span>
+<span class="sd">Implements the ECN O&amp;M Excel spreadsheet as a win32com object</span>
+<span class="sd"> </span>
+<span class="sd">Imported by ecnom.py and ecnAssy.py for use with openMDAO</span>
+
+<span class="sd">Created by George Scott on 2012-08-01.</span>
+<span class="sd">Modified by Katherine Dykes 2012.</span>
+<span class="sd">Copyright (c) NREL. All rights reserved.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">commonse.xcel_wrapper</span> <span class="kn">import</span> <span class="n">ExcelWrapper</span>
+
+<span class="c">#import win32com.client as win32</span>
+
+<span class="c"># shnums - sheet names and corresponding numbers in ECN O&amp;M spreadsheet</span>
+<span class="c">#   Most inputs will be on sheet &#39;General&#39; (5)</span>
+<span class="c">#   Most outputs are read from sheet &#39;OverviewResults&#39; (12)</span>
+
+<span class="n">shnums</span> <span class="o">=</span> <span class="p">{</span>     
+    <span class="s">&#39;Data&#39;</span>            <span class="p">:</span>  <span class="mi">1</span><span class="p">,</span> 
+    <span class="s">&#39;Definition&#39;</span>      <span class="p">:</span>  <span class="mi">2</span><span class="p">,</span> 
+    <span class="s">&#39;Fitting&#39;</span>         <span class="p">:</span>  <span class="mi">3</span><span class="p">,</span> 
+    <span class="s">&#39;WorkDays&#39;</span>        <span class="p">:</span>  <span class="mi">4</span><span class="p">,</span> 
+    <span class="s">&#39;General&#39;</span>         <span class="p">:</span>  <span class="mi">5</span><span class="p">,</span> 
+    <span class="s">&#39;FaultTypesWT&#39;</span>    <span class="p">:</span>  <span class="mi">6</span><span class="p">,</span> 
+    <span class="s">&#39;FaultTypesBOP&#39;</span>   <span class="p">:</span>  <span class="mi">7</span><span class="p">,</span> 
+    <span class="s">&#39;Equipment&#39;</span>       <span class="p">:</span>  <span class="mi">8</span><span class="p">,</span> 
+    <span class="s">&#39;FixedCosts&#39;</span>      <span class="p">:</span>  <span class="mi">9</span><span class="p">,</span> 
+    <span class="s">&#39;LowIntervals&#39;</span>    <span class="p">:</span> <span class="mi">10</span><span class="p">,</span> 
+    <span class="s">&#39;DataSeason&#39;</span>      <span class="p">:</span> <span class="mi">11</span><span class="p">,</span> 
+    <span class="s">&#39;OverviewResults&#39;</span> <span class="p">:</span> <span class="mi">12</span><span class="p">,</span> 
+    <span class="s">&#39;Costs_yr&#39;</span>        <span class="p">:</span> <span class="mi">13</span><span class="p">,</span> 
+    <span class="s">&#39;Costs_win&#39;</span>       <span class="p">:</span> <span class="mi">14</span><span class="p">,</span> 
+    <span class="s">&#39;Costs_spr&#39;</span>       <span class="p">:</span> <span class="mi">15</span><span class="p">,</span> 
+    <span class="s">&#39;Costs_sum&#39;</span>       <span class="p">:</span> <span class="mi">16</span><span class="p">,</span> 
+    <span class="s">&#39;Costs_aut&#39;</span>       <span class="p">:</span> <span class="mi">17</span><span class="p">,</span> 
+    <span class="s">&#39;Costs_yr_graphs&#39;</span> <span class="p">:</span> <span class="mi">18</span><span class="p">,</span> 
+    <span class="s">&#39;Application&#39;</span>     <span class="p">:</span> <span class="mi">19</span> 
+ <span class="p">}</span>
+
+<span class="c"># Failure frequencies are found in sheet &#39;FaultTypesWT&#39;</span>
+ 
+<span class="n">wt_failfreq_col</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">wt_failfreq_row</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&#39;MDA10&#39;</span> <span class="p">:</span>  <span class="mi">19</span><span class="p">,</span> <span class="c"># Rotor system - blades</span>
+    <span class="s">&#39;MDA20&#39;</span> <span class="p">:</span>  <span class="mi">27</span><span class="p">,</span> <span class="c"># Rotor system - Hub</span>
+    <span class="s">&#39;MDC&#39;</span>   <span class="p">:</span>  <span class="mi">35</span><span class="p">,</span> <span class="c"># Blade adjustment</span>
+    <span class="s">&#39;MDK10&#39;</span> <span class="p">:</span>  <span class="mi">43</span><span class="p">,</span> <span class="c"># Drive train - main shaft/bearing</span>
+    <span class="s">&#39;MDK30&#39;</span> <span class="p">:</span>  <span class="mi">51</span><span class="p">,</span> <span class="c"># Drive train - brake system</span>
+    <span class="s">&#39;MDL&#39;</span>   <span class="p">:</span>  <span class="mi">59</span><span class="p">,</span> <span class="c"># Yaw gearbox</span>
+    <span class="s">&#39;MDX&#39;</span>   <span class="p">:</span>  <span class="mi">67</span><span class="p">,</span> <span class="c"># Hydraulic system</span>
+    <span class="s">&#39;MDY&#39;</span>   <span class="p">:</span>  <span class="mi">75</span><span class="p">,</span> <span class="c"># Control and protection system turbine</span>
+    <span class="s">&#39;MKA&#39;</span>   <span class="p">:</span>  <span class="mi">83</span><span class="p">,</span> <span class="c"># Generator </span>
+    <span class="s">&#39;MKY&#39;</span>   <span class="p">:</span>  <span class="mi">91</span><span class="p">,</span> <span class="c"># Control and protection system generator</span>
+    <span class="s">&#39;MSA&#39;</span>   <span class="p">:</span>  <span class="mi">99</span><span class="p">,</span> <span class="c"># Generator lead / transmission cables</span>
+    <span class="s">&#39;MST&#39;</span>   <span class="p">:</span> <span class="mi">107</span><span class="p">,</span> <span class="c"># Transformer</span>
+    <span class="s">&#39;MUD&#39;</span>   <span class="p">:</span> <span class="mi">115</span><span class="p">,</span> <span class="c"># Machinery enclosure</span>
+    <span class="s">&#39;UMD&#39;</span>   <span class="p">:</span> <span class="mi">123</span><span class="p">,</span> <span class="c"># Turbine structure / tower</span>
+    <span class="s">&#39;XA&#39;</span>    <span class="p">:</span> <span class="mi">131</span><span class="p">,</span> <span class="c"># Heating, ventilation, air conditioning</span>
+    <span class="s">&#39;XM&#39;</span>    <span class="p">:</span> <span class="mi">139</span><span class="p">,</span> <span class="c"># Crane system</span>
+    <span class="s">&#39;AB&#39;</span>    <span class="p">:</span> <span class="mi">147</span><span class="p">,</span> <span class="c"># Lightning protection / grounding</span>
+    <span class="s">&#39;MD&#39;</span>    <span class="p">:</span> <span class="mi">155</span><span class="p">,</span> <span class="c"># Remote Resets</span>
+    <span class="p">}</span>
+
+<span class="c">#euro = u&quot;\u20AC&quot;</span>
+
+<span class="c">#-------------------------------------------------------------------------</span>
+    
+<div class="viewcode-block" id="ecnomXLS"><a class="viewcode-back" href="../../../documentation.html#plant_costsse.ecn_offshore_opex.ecnomXLS.ecnomXLS">[docs]</a><span class="k">class</span> <span class="nc">ecnomXLS</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    class ecnomXLS:</span>
+<span class="sd">      a Python interface to the ECN O&amp;M Excel spreadsheet</span>
+<span class="sd">      </span>
+<span class="sd">      Note: for setCell() and getCell(), the user MUST know the exact</span>
+<span class="sd">        cell row and column indicies in &#39;General&#39; and &#39;OverviewResults&#39;</span>
+<span class="sd">        respectively. Results are unpredictable otherwise.</span>
+<span class="sd">        </span>
+<span class="sd">      methods execute(), failsweep() and salsweep() are provide only as</span>
+<span class="sd">      examples.</span>
+<span class="sd">         </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c">#-----------------------</span>
+        
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">debug</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span> <span class="o">=</span> <span class="n">debug</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xcel</span> <span class="o">=</span> <span class="n">ExcelWrapper</span><span class="p">()</span>
+        
+        <span class="c"># row indices into &#39;General&#39; worksheet    </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">i_price</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">i_nturb</span> <span class="o">=</span> <span class="mi">6</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">i_lftim</span> <span class="o">=</span> <span class="mi">7</span>
+        
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">):</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s">&quot;Created ecnomXLS object</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+            
+    <span class="c">#-----------------------</span>
+        
+    <span class="k">def</span> <span class="nf">ssopen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ssfile</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        open the ECN O&amp;M spreadsheet</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">ssfile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">ssfile</span><span class="p">)):</span>
+                <span class="k">print</span> <span class="s">&quot;xlsfile not found: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ssfile</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;No such file: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ssfile</span><span class="p">))</span>
+                <span class="c">#return 0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xlsfile</span> <span class="o">=</span> <span class="n">ssfile</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xlsfile</span> <span class="o">=</span> <span class="s">&quot; &quot;</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xlsfile</span><span class="p">)):</span>
+            <span class="k">print</span> <span class="s">&quot;xlsfile not valid: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xlsfile</span><span class="p">)</span>
+            <span class="sd">&#39;&#39;&#39;raise ValueError(&#39;No such file: {}&#39;.format(self.xlsfile))&#39;&#39;&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Start Excel</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xcel</span><span class="o">.</span><span class="n">openWorkbook</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xlsfile</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">res</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">res</span>
+            
+    <span class="c">#        if (self.debug):    </span>
+    <span class="c">#            print &quot;Found %d sheets&quot; % self.ss.Sheets.Count</span>
+    <span class="c">#            for i in range(1,self.ss.Sheets.Count+1):</span>
+    <span class="c">#                print &quot;%2d %s&quot; % (i, self.ss.Worksheets(i).Name)</span>
+    <span class="c">#            print</span>
+        
+    <span class="c">#-----------------------</span>
+        
+    <span class="k">def</span> <span class="nf">ssclose</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        close the ECN O&amp;M spreadsheet</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># Close spreadsheet without saving</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xcel</span><span class="o">.</span><span class="n">closeWorkbook</span><span class="p">()</span>       
+<span class="c">#        self.ss.Close(False)</span>
+        
+        <span class="c"># If user doesn&#39;t have any other workbooks open in Excel, quit Excel</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">xcel</span><span class="o">.</span><span class="n">countWorkbooks</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xcel</span><span class="o">.</span><span class="n">closeExcel</span><span class="p">()</span> 
+    
+    <span class="c">#-----------------------</span>
+        
+    <span class="k">def</span> <span class="nf">setCell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">irow</span><span class="p">,</span><span class="n">icol</span><span class="p">,</span><span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        set an input cell in the ECN O&amp;M spreadsheet, &#39;General&#39; worksheet</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xcel</span><span class="o">.</span><span class="n">setCell</span><span class="p">(</span><span class="n">irow</span><span class="p">,</span> <span class="n">icol</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="s">&quot;General&quot;</span><span class="p">)</span>
+
+<span class="c">#        self.ss.Activate()</span>
+<span class="c">#        self.xl.Worksheets(&quot;General&quot;).Activate()</span>
+<span class="c">#        sh = self.ss.ActiveSheet</span>
+<span class="c">#        sh.Cells(irow,icol).Value = value</span>
+<span class="c">#        sh.Calculate()</span>
+    
+    <span class="c">#-----------------------</span>
+        
+    <span class="k">def</span> <span class="nf">getCell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">irow</span><span class="p">,</span><span class="n">icol</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        get an output cell in the ECN O&amp;M spreadsheet, &#39;OverviewResults&#39; worksheet</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c">#self.xl.Worksheets(&quot;OverviewResults&quot;).Activate()</span>
+        <span class="c">#sh = self.ss.ActiveSheet</span>
+        <span class="c">#value = sh.Cells(irow,icol).Value</span>
+        
+        <span class="c"># if value.__class__ is &#39;unicode&#39; or &#39;NoneType&#39;,</span>
+        <span class="c">#   we have an error</span>
+       
+        <span class="c">#return (value)</span>
+<span class="c">#        return (self.ss.Worksheets(shnums[&#39;OverviewResults&#39;]).Cells(irow,icol).Value)</span>
+        <span class="n">cval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xcel</span><span class="o">.</span><span class="n">getCell</span><span class="p">(</span><span class="n">irow</span><span class="p">,</span> <span class="n">icol</span><span class="p">,</span> <span class="s">&quot;OverviewResults&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cval</span>
+    <span class="c">#-----------------------</span>
+        
+    <span class="k">def</span> <span class="nf">getInputCell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">irow</span><span class="p">,</span><span class="n">icol</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        get an input cell in the ECN O&amp;M spreadsheet, &#39;Input&#39; worksheet</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+<span class="c">#        return self.ss.Worksheets(shnums[&#39;General&#39;]).Cells(irow,icol).Value</span>
+        <span class="n">cval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xcel</span><span class="o">.</span><span class="n">getCell</span><span class="p">(</span><span class="n">irow</span><span class="p">,</span> <span class="n">icol</span><span class="p">,</span> <span class="s">&quot;General&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cval</span>
+    
+    <span class="c">#-----------------------    </span>
+        
+    <span class="k">def</span> <span class="nf">getCost</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        return the value of cents/kWH from the ECN O&amp;M spreadsheet, &#39;OverviewResults&#39; worksheet</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+<span class="c">#        return (self.ss.Worksheets(shnums[&#39;OverviewResults&#39;]).Cells(3,6).Value)</span>
+        <span class="n">cval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xcel</span><span class="o">.</span><span class="n">getCell</span><span class="p">(</span><span class="n">irow</span><span class="p">,</span> <span class="n">icol</span><span class="p">,</span> <span class="s">&quot;OverviewResults&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cval</span>
+    
+    <span class="c">#-----------------------</span>
+        
+    <span class="k">def</span> <span class="nf">printCosts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        print calculated costs from the ECN O&amp;M spreadsheet</span>
+<span class="sd">        returns revenue loss, repair costs and totals</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+<span class="c">#        self.ss.Activate()        </span>
+<span class="c">#        self.xl.Worksheets(&quot;OverviewResults&quot;).Activate()</span>
+<span class="c">#        sh = self.ss.ActiveSheet</span>
+        <span class="n">iRowRL</span> <span class="o">=</span> <span class="mi">24</span> <span class="c"># revenue losses</span>
+        <span class="n">iRowRC</span> <span class="o">=</span> <span class="mi">56</span> <span class="c"># repair costs</span>
+        
+        <span class="n">rl</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">rc</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">ttl</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">head</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Winter&#39;</span><span class="p">,</span> <span class="s">&#39;Spring&#39;</span><span class="p">,</span> <span class="s">&#39;Summer&#39;</span><span class="p">,</span> <span class="s">&#39;Fall&#39;</span><span class="p">,</span> <span class="s">&#39;Year&#39;</span><span class="p">,</span> <span class="s">&#39;Total&#39;</span><span class="p">]</span>
+        
+        <span class="k">print</span> <span class="s">&#39; &#39;</span> <span class="o">*</span> <span class="mi">12</span><span class="p">,</span>
+        <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">head</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">h</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+              <span class="k">print</span> <span class="s">&quot;{0:&gt;6} &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">h</span><span class="p">),</span>
+        <span class="k">print</span> 
+        
+        <span class="k">print</span> <span class="s">&#39;{0:12}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&#39;Revenue Loss&#39;</span><span class="p">),</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">10</span><span class="p">):</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xcel</span><span class="o">.</span><span class="n">getCell</span><span class="p">(</span><span class="n">iRowRL</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="s">&quot;OverviewResults&quot;</span><span class="p">)</span>
+<span class="c">#            val = sh.Cells(iRowRL,i).Value</span>
+            <span class="n">rl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+            <span class="k">print</span> <span class="s">&quot;{0:6.0f} &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="p">),</span>
+        <span class="k">print</span>
+        
+        <span class="k">print</span> <span class="s">&#39;{0:12}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&quot;Repair Cost&quot;</span><span class="p">),</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">10</span><span class="p">):</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xcel</span><span class="o">.</span><span class="n">getCell</span><span class="p">(</span><span class="n">iRowRC</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="s">&quot;OverviewResults&quot;</span><span class="p">)</span>
+<span class="c">#            val = sh.Cells(iRowRC,i).Value</span>
+            <span class="n">rc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+            <span class="k">print</span> <span class="s">&quot;{0:6.0f} &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="p">),</span>
+        <span class="k">print</span>
+        
+        <span class="k">print</span> <span class="s">&#39;{0:12}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&quot;Total&quot;</span><span class="p">),</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">10</span><span class="p">):</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xcel</span><span class="o">.</span><span class="n">getCell</span><span class="p">(</span><span class="n">iRowRL</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="s">&quot;OverviewResults&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">xcel</span><span class="o">.</span><span class="n">getCell</span><span class="p">(</span><span class="n">iRowRC</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="s">&quot;OverviewResults&quot;</span><span class="p">)</span>
+<span class="c">#            val = sh.Cells(iRowRL,i).Value+sh.Cells(iRowRC,i).Value</span>
+            <span class="n">ttl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+            <span class="k">print</span> <span class="s">&quot;{0:6.0f} &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="p">),</span>
+        <span class="k">print</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">rl</span><span class="p">,</span> <span class="n">rc</span><span class="p">,</span> <span class="n">ttl</span><span class="p">)</span>
+        
+    <span class="c">#-----------------------</span>
+    <span class="c">#-----------------------</span>
+        
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        EXAMPLES: ways to access the ECN O&amp;M spreadsheet</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c">#c61 = currency</span>
+        <span class="c">#i61 = cost </span>
+              
+        <span class="n">isht</span> <span class="o">=</span> <span class="n">shnums</span><span class="p">[</span><span class="s">&#39;OverviewResults&#39;</span><span class="p">]</span>
+        <span class="k">print</span> <span class="s">&quot;Cost </span><span class="si">%.3f</span><span class="s"> </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">ss</span><span class="o">.</span><span class="n">Worksheets</span><span class="p">(</span><span class="n">isht</span><span class="p">)</span><span class="o">.</span><span class="n">Cells</span><span class="p">(</span><span class="mi">61</span><span class="p">,</span><span class="mi">9</span><span class="p">)</span><span class="o">.</span><span class="n">Value</span><span class="p">,</span> 
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">ss</span><span class="o">.</span><span class="n">Worksheets</span><span class="p">(</span><span class="n">isht</span><span class="p">)</span><span class="o">.</span><span class="n">Cells</span><span class="p">(</span><span class="mi">61</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">Text</span><span class="p">)</span>   
+
+        <span class="c"># Modify the input data sheet</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">xl</span><span class="o">.</span><span class="n">Worksheets</span><span class="p">(</span><span class="s">&quot;General&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">Activate</span><span class="p">()</span>
+        <span class="n">sh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ss</span><span class="o">.</span><span class="n">ActiveSheet</span>
+        <span class="n">inpCol</span> <span class="o">=</span> <span class="mi">3</span>
+      
+        <span class="c"># Set x and y in spreadsheet, calculate and return f(x,y)</span>
+
+        <span class="n">price</span> <span class="o">=</span> <span class="mf">0.15</span> <span class="c"># Euros/kWh</span>
+        <span class="n">nturb</span> <span class="o">=</span> <span class="mi">100</span>
+        <span class="n">lftim</span> <span class="o">=</span> <span class="mi">18</span>
+        
+        <span class="n">sh</span><span class="o">.</span><span class="n">Cells</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">i_price</span><span class="p">,</span>    <span class="n">inpCol</span><span class="p">)</span><span class="o">.</span><span class="n">Value</span> <span class="o">=</span> <span class="n">price</span>
+        <span class="n">sh</span><span class="o">.</span><span class="n">Cells</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">i_nturb</span><span class="p">,</span>    <span class="n">inpCol</span><span class="p">)</span><span class="o">.</span><span class="n">Value</span> <span class="o">=</span> <span class="n">nturb</span>
+        <span class="n">sh</span><span class="o">.</span><span class="n">Cells</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">i_lftim</span><span class="p">,</span>    <span class="n">inpCol</span><span class="p">)</span><span class="o">.</span><span class="n">Value</span> <span class="o">=</span> <span class="n">lftim</span>
+        
+        <span class="n">sh</span><span class="o">.</span><span class="n">Calculate</span><span class="p">()</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">printCosts</span><span class="p">()</span>
+    
+    <span class="c">#-----------------------</span>
+        
+    <span class="k">def</span> <span class="nf">salsweep</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        EXAMPLE: Sweep over a salary range</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">):</span>
+            <span class="n">salary</span> <span class="o">=</span> <span class="mi">150000</span> <span class="o">+</span> <span class="n">i</span><span class="o">*</span><span class="mf">10000.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ss</span><span class="o">.</span><span class="n">Worksheets</span><span class="p">(</span><span class="n">shnums</span><span class="p">[</span><span class="s">&#39;General&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">Cells</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">15</span><span class="p">)</span><span class="o">.</span><span class="n">Value</span> <span class="o">=</span> <span class="n">salary</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ss</span><span class="o">.</span><span class="n">Worksheets</span><span class="p">(</span><span class="n">shnums</span><span class="p">[</span><span class="s">&#39;General&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">Calculate</span><span class="p">()</span>
+            <span class="k">print</span> <span class="s">&quot;Salary {:.1f} Cost {:.1f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">salary</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">ss</span><span class="o">.</span><span class="n">Worksheets</span><span class="p">(</span><span class="n">shnums</span><span class="p">[</span><span class="s">&#39;OverviewResults&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">Cells</span><span class="p">(</span><span class="mi">61</span><span class="p">,</span><span class="mi">9</span><span class="p">)</span><span class="o">.</span><span class="n">Value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ss</span><span class="o">.</span><span class="n">Worksheets</span><span class="p">(</span><span class="n">shnums</span><span class="p">[</span><span class="s">&#39;General&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">Cells</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">15</span><span class="p">)</span><span class="o">.</span><span class="n">Value</span> <span class="o">=</span> <span class="mi">150000</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ss</span><span class="o">.</span><span class="n">Worksheets</span><span class="p">(</span><span class="n">shnums</span><span class="p">[</span><span class="s">&#39;General&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">Calculate</span><span class="p">()</span>
+
+    <span class="c">#-----------------------</span>
+        
+    <span class="k">def</span> <span class="nf">failsweep</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        EXAMPLE: Sweep over a failure rate range</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">isht</span> <span class="o">=</span> <span class="n">shnums</span><span class="p">[</span><span class="s">&#39;FaultTypesWT&#39;</span><span class="p">]</span>
+        <span class="n">fail_rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ss</span><span class="o">.</span><span class="n">Worksheets</span><span class="p">(</span><span class="n">isht</span><span class="p">)</span><span class="o">.</span><span class="n">Cells</span><span class="p">(</span><span class="n">wt_failfreq_row</span><span class="p">[</span><span class="s">&#39;MDK10&#39;</span><span class="p">],</span><span class="n">wt_failfreq_col</span><span class="p">)</span><span class="o">.</span><span class="n">Value</span>
+        <span class="n">fr_mult</span> <span class="o">=</span> <span class="mf">1.3</span>
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ss</span><span class="o">.</span><span class="n">Worksheets</span><span class="p">(</span><span class="n">isht</span><span class="p">)</span><span class="o">.</span><span class="n">Cells</span><span class="p">(</span><span class="n">wt_failfreq_row</span><span class="p">[</span><span class="s">&#39;MDK10&#39;</span><span class="p">],</span><span class="n">wt_failfreq_col</span><span class="p">)</span><span class="o">.</span><span class="n">Value</span> <span class="o">=</span> <span class="n">fail_rate</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ss</span><span class="o">.</span><span class="n">Worksheets</span><span class="p">(</span><span class="n">isht</span><span class="p">)</span><span class="o">.</span><span class="n">Calculate</span><span class="p">()</span>
+            <span class="k">print</span> <span class="s">&quot;FailRate {:.2f} Cost {:.1f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fail_rate</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">ss</span><span class="o">.</span><span class="n">Worksheets</span><span class="p">(</span><span class="n">shnums</span><span class="p">[</span><span class="s">&#39;OverviewResults&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">Cells</span><span class="p">(</span><span class="mi">61</span><span class="p">,</span><span class="mi">9</span><span class="p">)</span><span class="o">.</span><span class="n">Value</span><span class="p">)</span>
+            <span class="n">fail_rate</span> <span class="o">*=</span> <span class="n">fr_mult</span>
+
+
+
+<span class="c">#--------------------------------------------------------------------------------------------</span>
+</div>
+<span class="k">def</span> <span class="nf">example</span><span class="p">():</span>
+
+    <span class="n">om</span> <span class="o">=</span> <span class="n">ecnomXLS</span><span class="p">()</span>
+
+    <span class="kn">import</span> <span class="nn">time</span>
+    <span class="n">tt</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="n">ssfile</span>  <span class="o">=</span> <span class="s">r&#39;C:/Python27/openmdao-0.3.0/twister/models/OM/ECN/ECN O&amp;M Tool IO&amp;M Baseline.xls&#39;</span> <span class="c">#TODO - machine dependency</span>
+    
+    <span class="n">om</span><span class="o">.</span><span class="n">ssopen</span><span class="p">(</span><span class="n">ssfile</span><span class="o">=</span><span class="n">ssfile</span><span class="p">)</span>
+    
+    <span class="k">print</span> <span class="s">&quot;Cost with 50 turbines&quot;</span>
+    <span class="p">(</span><span class="n">rl</span><span class="p">,</span><span class="n">rc</span><span class="p">,</span><span class="n">ttl</span><span class="p">)</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="n">printCosts</span><span class="p">()</span> 
+    <span class="k">print</span> <span class="s">&quot;Cost/kWH {:5.3f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">getCell</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span> <span class="c"># get cost/kWH</span>
+    
+    <span class="n">om</span><span class="o">.</span><span class="n">setCell</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">100</span><span class="p">)</span> <span class="c"># change number of turbines</span>
+
+    <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">Cost with 100 turbines&quot;</span>    
+    <span class="p">(</span><span class="n">rl</span><span class="p">,</span><span class="n">rc</span><span class="p">,</span><span class="n">ttl</span><span class="p">)</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="n">printCosts</span><span class="p">()</span> 
+    <span class="k">print</span> <span class="s">&quot;Cost/kWH {:5.3f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">getCell</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span> <span class="c"># get cost/kWH</span>
+
+    <span class="n">om</span><span class="o">.</span><span class="n">setCell</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">50</span><span class="p">)</span> <span class="c"># change number of turbines</span>
+    
+    <span class="n">om</span><span class="o">.</span><span class="n">ssclose</span><span class="p">()</span>
+    
+    <span class="k">print</span> <span class="s">&quot;Elapsed time: {:.3f} seconds&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">tt</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+
+    <span class="n">example</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="../../../index.html">Plant_CostsSE 0.1.0 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, NREL.
+      Last updated on Oct 07, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>
